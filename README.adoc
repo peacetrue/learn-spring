@@ -1,0 +1,77 @@
+= learn spring
+xiayx <xiayouxue@hotmail.com>
+v1.0, 2019-07-19: SNAPSHOT
+:doctype: docbook
+:toc: left
+:numbered:
+:imagesdir: docs/assets/images
+:sourcedir: src/main/java
+:resourcesdir: src/main/resources
+:testsourcedir: src/test/java
+:source-highlighter: highlightjs
+
+.参考文档
+* https://docs.spring.io/spring/docs/4.3.24.RELEASE/spring-framework-reference/htmlsingle/[4.3.24.RELEASE]
+
+== I. Overview of Spring Framework
+
+=== 1. Getting Started with Spring
+=== 2. Introduction to the Spring Framework
+==== 2.1. Dependency Injection and Inversion of Control
+==== 2.2. Framework Modules
+===== 2.2.1. Core Container
+===== 2.2.2. AOP and Instrumentation
+===== 2.2.3. Messaging
+===== 2.2.4. Data Access/Integration
+===== 2.2.5. Web
+===== 2.2.6. Test
+==== 2.3. Usage scenarios
+===== 2.3.1. Dependency Management and Naming Conventions
+Spring Dependencies and Depending on Spring
+Maven Dependency Management
+Maven "Bill Of Materials" Dependency
+Gradle Dependency Management
+Ivy Dependency Management
+Distribution Zip Files
+===== 2.3.2. Logging
+Using Log4j 1.2 or 2.x
+Avoiding Commons Logging
+Using SLF4J with Log4j or Logback
+Using JUL (java.util.logging)
+Commons Logging on WebSphere
+
+== II. What’s New in Spring Framework 4.x
+
+== III. Core Technologies
+=== 7. The IoC container
+=== 8. Resources
+=== 9. Validation, Data Binding, and Type Conversion
+=== 10. Spring Expression Language (SpEL)
+=== 11. Aspect Oriented Programming with Spring
+=== 12. Spring AOP APIs
+
+== IV. Testing
+== V. Data Access
+== VI. The Web
+== VII. Integration
+== VIII. Appendices
+
+
+
+== Question
+=== 事件处理
+* 参考：``EventTest``
+
+.相关点
+* handler的顺序
+* handler的异常
+
+事件不应该影响主流程，所以handler不应该抛出异常，Spring没有处理handler抛出的异常
+
+
+
+
+
+
+
+
