@@ -1,0 +1,7 @@
+= spring 事件异常处理
+
+[source%nowrap,java]
+----
+include::example$com/github/peacetrue/learn/spring/event/SpringEventListenerExceptionHandle.java[]
+----
+

@@ -67,13 +67,6 @@ public class SpringEventListenerInteractivePayloadImprove {
     @Component
     public static class XiaoMingFirst {
 
-        /**
-         * 注意：
-         * 参数使用{@code PayloadApplicationEvent<InteractivePayload<?>>}，而非{@code PayloadApplicationEvent<InteractivePayload<XiaoYu>>}，
-         * 因为后者 spring 不支持。
-         * 很奇怪，前者在 Intellij IDEA 中不被支持，而后者在 Intellij IDEA 中被支持。
-         * Intellij IDEA 支持时会在左边行号附近显示小标记，点击后可以在触发代码和监听代码之间相互跳转。
-         */
         @EventListener(condition = "#event.source=='wakeUp'")
         @Order(Ordered.HIGHEST_PRECEDENCE)
         public void xiaoYuWakeUp(PayloadEvent<InteractivePayload<XiaoYu>> event) {

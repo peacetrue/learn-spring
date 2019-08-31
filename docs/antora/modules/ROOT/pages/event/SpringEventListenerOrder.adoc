@@ -1,0 +1,6 @@
+= spring 事件监听器执行顺序
+
+[source%nowrap,java]
+----
+include::example$com/github/peacetrue/learn/spring/event/SpringEventListenerOrder.java[]
+----
