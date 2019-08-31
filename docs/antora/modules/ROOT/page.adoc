@@ -1,0 +1,11 @@
+= 文档预览
+:moduledir: ..
+:attachmentsdir: {moduledir}/assets/attachments
+:examplesdir: {moduledir}/examples
+:imagesdir: {moduledir}/assets/images
+:partialsdir: {moduledir}/pages/_partials
+:numbered: 4
+:toc:
+
+:toplevel: +1
+include::pages/event.adoc[]
