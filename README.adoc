@@ -1,4 +1,4 @@
-= spring官方文档的译文
+= 学习 spring-framework
 xiayx <xiayouxue@hotmail.com>
 v1.0, 2019-07-19: SNAPSHOT
 :doctype: docbook
