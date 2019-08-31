@@ -1,4 +1,6 @@
-= 事件模型
+= spring事件模型
+
+本文主要介绍如何在项目中使用spring的事件机制。
 
 == 原始事件模型
 [source%nowrap,java]

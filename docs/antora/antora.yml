@@ -1,5 +1,6 @@
 name: learn-spring-framework
 title: 学习 spring-framework
 version: master
+start_page: event.adoc
 nav:
   - modules/ROOT/nav.adoc
