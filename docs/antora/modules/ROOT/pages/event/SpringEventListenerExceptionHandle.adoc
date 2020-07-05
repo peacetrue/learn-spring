@@ -2,6 +2,6 @@
 
 [source%nowrap,java]
 ----
-include::example$com/github/peacetrue/learn/spring/event/SpringEventListenerExceptionHandle.java[]
+include::example$event/SpringEventListenerExceptionHandle.java[]
 ----
 

@@ -1,0 +1,5 @@
+description '事件模型'
+
+dependencies {
+    implementation "org.springframework:spring-context-support"
+}

@@ -2,5 +2,5 @@
 
 [source%nowrap,java]
 ----
-include::example$com/github/peacetrue/learn/spring/event/SpringEventListenerOrder.java[]
+include::example$event/SpringEventListenerOrder.java[]
 ----

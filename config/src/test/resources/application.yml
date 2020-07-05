@@ -1,0 +1,67 @@
+---
+
+spring.profiles: list
+
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: list & overwrite
+
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test1/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize1/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: map
+
+peacetrue:
+  learn:
+    static-resources:
+      /test/**: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      /summarize/**: file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: map & append
+
+peacetrue:
+  learn:
+    static-resources:
+      /test1/**: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      /summarize1/**: file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: map & translation
+
+peacetrue:
+  learn:
+    static-resources:
+      '[/test/**]': file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      '[/summarize/**]': file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: equivalent-map
+
+peacetrue:
+  learn:
+    map-static-resources:
+      0:
+        pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      1:
+        pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/

@@ -2,5 +2,5 @@
 
 [source%nowrap,java]
 ----
-include::example$com/github/peacetrue/learn/spring/event/SpringEventModelOnSpringEvent.java[]
+include::example$event/SpringEventModelOnSpringEvent.java[]
 ----

@@ -2,6 +2,6 @@
 
 [source%nowrap,java]
 ----
-include::example$com/github/peacetrue/learn/spring/event/SpringEventListenerInteractivePayload.java[]
+include::example$event/SpringEventListenerInteractivePayload.java[]
 ----
 

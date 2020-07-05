@@ -1,0 +1,9 @@
+= 问题清单
+
+== @ConfigurationProperties 的名称
+
+== 判断配置对象是否为空
+
+== ConditionalOnProperty for Object
+
+see https://stackoverflow.com/questions/62734544/spring-conditionalonproperty-for-bean

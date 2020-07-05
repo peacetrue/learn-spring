@@ -1,128 +1,58 @@
-plugins {
-    id 'maven-publish'
-    id 'signing'
-    id 'idea'
-    id "org.springframework.boot" version "2.0.0.RELEASE" apply(false)
-}
-
-allprojects {
+buildscript {
     repositories {
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        mavenCentral()
+        maven { url 'https://repo.spring.io/plugins-release' }
+    }
+
+    dependencies {
+        classpath "io.spring.gradle:dependency-management-plugin:1+"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:2+"
     }
 }
-
 
 allprojects { project ->
 
-    apply plugin: 'io.spring.dependency-management'
-    dependencyManagement {
-        imports {
-            mavenBom "org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE"
-            mavenBom "com.github.peacetrue:peacetrue-dependencies:1.0.3-SNAPSHOT"
-        }
+    repositories {
+        mavenLocal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://repo.spring.io/plugins-release" }
+        mavenCentral()
     }
 
+    apply plugin: 'org.springframework.boot'
+    apply plugin: "io.spring.dependency-management"
+    dependencyManagement {
+        imports {
+            mavenBom "com.github.peacetrue:peacetrue-dependencies:2+"
+        }
+    }
+    // find -type f | grep .svn$
     group 'com.github.peacetrue.learn'
-    version '1.0-SNAPSHOT'
-    description '学习spring framework'
+    version '1.0.0-SNAPSHOT'
+    description '学习 spring-framework'
 
-    apply plugin: 'java'
-    sourceCompatibility = 1.8
+    apply plugin: "java-library"
+    sourceCompatibility = 9
+    targetCompatibility = 9
 
     dependencies {
         compileOnly "org.projectlombok:lombok"
         annotationProcessor "org.projectlombok:lombok"
-        implementation 'com.google.code.findbugs:jsr305'
-        implementation "org.springframework:spring-context-support"
+        implementation("com.google.code.findbugs:jsr305")
 
-        testImplementation "junit:junit"
+        testImplementation('org.springframework.boot:spring-boot-starter-test') {
+            exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+        }
+        testImplementation 'org.junit.jupiter:junit-jupiter-api'
         testCompileOnly "org.projectlombok:lombok"
         testAnnotationProcessor "org.projectlombok:lombok"
-        testImplementation "org.springframework:spring-test"
     }
 
-    compileJava {
-        doLast {
-            delete {
-                delete('docs/antora/modules/ROOT/examples')
-            }
-            copy {
-                from sourceSets.main.allSource
-                into('docs/antora/modules/ROOT/examples')
-            }
-        }
-    }
-
-    task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allJava
-    }
-
-    task javadocJar(type: Jar) {
-        archiveClassifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    def repository_snapshots = "https://oss.sonatype.org/content/repositories/snapshots/"
-    def repository_releases = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-
-    apply plugin: 'maven-publish'
-    apply plugin: 'signing'
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                pom {
-                    name = project.name
-                    description = project.description
-                    url = 'https://github.com/peacetrue/task'
-                    licenses {
-                        license {
-                            name = 'The Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'xiayouxue'
-                            name = 'xiayouxue'
-                            email = 'xiayouxue@hotmail.com'
-                        }
-                    }
-                    scm {
-                        connection = 'https://github.com/peacetrue/task.git'
-                        developerConnection = 'https://github.com/peacetrue/task.git'
-                        url = 'https://github.com/peacetrue/peacetrue/task'
-                    }
-                }
-
-                from components.java
-
-                artifact sourcesJar
-                artifact javadocJar
-            }
-        }
-
-        repositories {
-            maven {
-                url version.endsWith('SNAPSHOT') ? repository_snapshots : repository_releases
-                credentials {
-                    username = ossrhUsername
-                    password = ossrhPassword
-                }
-            }
-        }
-    }
-
-    signing {
-        sign publishing.publications.mavenJava
+    test {
+        useJUnitPlatform()
     }
 
 }
 
-dependencies {
-    testCompile 'org.springframework:spring-webmvc'
-}
 
 
 

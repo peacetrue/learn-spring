@@ -1,0 +1,8 @@
+description '客户端请求'
+
+dependencies {
+    implementation "org.springframework:spring-context-support"
+    testImplementation "org.springframework:spring-test"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework.boot:spring-boot-starter-web"
+}

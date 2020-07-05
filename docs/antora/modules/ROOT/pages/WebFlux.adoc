@@ -1,0 +1,142 @@
+= WebFlux 请求响应接口
+安宁 <xiayouxue@hotmail.com>
+v1.0, 2020-06-12: SNAPSHOT
+:numbered:
+
+简单介绍 *org.springframework:spring-webflux* 中的请求响应接口。
+
+== 请求响应模型
+
+.请求响应模型
+image::请求响应模型.png[]
+
+== 客户端视角
+
+=== 客户端
+
+客户端用于发送请求获得响应。相关接口包括 `ExchangeFunction` 和 `WebClient`，`WebClient` 封装至 `ExchangeFunction`，可以通过链式写法构造并发送请求。
+
+==== ExchangeFunction 交换函数
+
+.交换函数类图
+image::交换函数类图.png[]
+
+.用法示例
+[source%nowrap,java]
+----
+//构造交换函数
+ExchangeFunction exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
+//构造请求
+ClientRequest<Void> request = ClientRequest.method(HttpMethod.GET, "https://example.com/resource").build();
+
+//发送请求并获得响应
+Mono<String> result = exchangeFunction
+   .exchange(request)
+   .then(response -> response.bodyToMono(String.class));
+----
+
+==== WebClient Web 客户端
+
+.web客户端类图
+image::web客户端类图.png[]
+
+.用法示例
+[source%nowrap,java]
+----
+Mono<String> result = WebClient.builder()
+        .baseUrl("https://example.com/resource")
+        .build()
+        .get()
+        .retrieve()
+        .bodyToMono(String.class);
+----
+
+`ExchangeFunction` 的分步操作，通过 `WebClient` 的链式操作实现。
+
+=== 客户端过滤器 ExchangeFilterFunction
+
+.客户端拦截器原理
+image::客户端拦截器原理.png[]
+
+* 在实际发出请求之后处理请求
+* 在实际获得响应之前处理响应
+
+.用法示例（基于 ExchangeFunction ）
+[source%nowrap,java]
+----
+ExchangeFunction exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
+ClientRequest<Void> request = ClientRequest.method(HttpMethod.GET, "https://example.com/resource").build();
+
+Mono<String> result = exchangeFunction
+//添加一个过滤器，什么也没做
+   .filter((clientRequest, exchangeFunction) -> exchangeFunction.exchange(clientRequest)) //<1>
+   .exchange(request)
+   .then(response -> response.bodyToMono(String.class));
+----
+
+.用法示例（基于 WebClient ）
+[source%nowrap,java]
+----
+Mono<String> result = WebClient.builder()
+        .baseUrl("https://example.com/resource")
+//添加一个过滤器，什么也没做
+        .filter((clientRequest, exchangeFunction) -> exchangeFunction.exchange(clientRequest))
+        .build()
+        .get()
+        .retrieve()
+        .bodyToMono(String.class);
+----
+
+=== 客户端请求 ClientRequest
+
+包含客户端请求的具体信息。
+
+.客户端请求类图
+image::客户端请求类图.png[]
+
+=== 客户端响应 ClientResponse
+
+包含客户端响应的具体信息。
+
+.客户端响应类图
+image::客户端响应类图.png[]
+
+== 服务端视角
+
+服务端处理流程如下：
+
+.服务端处理流程
+image::服务端处理流程.png[]
+
+=== 服务端路由函数 RouterFunction
+
+.服务端路由函数类图
+image::服务端路由函数类图.png[]
+
+=== 服务端处理函数 HandlerFunction
+
+由程序员最终实现的末端函数。
+
+.服务端处理函数类图
+image::服务端处理函数类图.png[]
+
+=== 服务端过滤器 HandlerFilterFunction
+
+image::服务端过滤器类图.png[]
+
+* 在实际接收请求之前处理请求
+* 在实际输出响应之后处理响应
+
+=== 服务端请求 ServerRequest
+
+包含请求的具体信息。
+
+.服务端请求
+image::服务端请求.png[]
+
+=== 服务端响应 ServerResponse
+
+包含响应的具体信息。
+
+.服务端响应
+image::服务端响应.png[]

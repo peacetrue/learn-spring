@@ -1,0 +1,41 @@
+= HttpMessageConverter
+:imagesdir: ../assets/images
+
+
+使用注解``@ResponseBody``输出JSON数据时，
+配置日期格式为``yyyy-MM-dd HH:mm:ss``，
+输出的是数值，配置没有生效。
+
+image:5.png[]
+
+通过调试，分析源码后，发现``@ResponseBody``所使用的``MappingJackson2HttpMessageConverter``，
+与我们在上面配置使用的不是同一个。
+
+.``JacksonHttpMessageConvertersConfiguration``中声明了配置使用的``MappingJackson2HttpMessageConverter``
+image::11.png[]
+
+.``@ResponseBody``所使用的``MappingJackson2HttpMessageConverter``源至``WebMvcConfigurationSupport``
+image::12.png[]
+
+以下具体分析``@ResponseBody``使用的``MappingJackson2HttpMessageConverter``来源过程：
+
+.注解``@EnableWebMvc``会使用到``DelegatingWebMvcConfiguration``
+image::4.png[]
+
+.``WebMvcConfigurationSupport``中会创建``RequestMappingHandlerAdapter``
+image::3.png[]
+
+.``WebMvcConfigurationSupport``会创建``HttpMessageConverter``
+image::6.png[]
+
+.``configureMessageConverters``中会使用到``WebMvcAutoConfigurationAdapter``
+image::7.png[]
+
+.``WebMvcAutoConfigurationAdapter``会通过``HttpMessageConverters``获取``HttpMessageConverter``
+image::8.png[]
+
+.``HttpMessageConvertersAutoConfiguration``中创建了``HttpMessageConverters``
+image::9.png[]
+
+.``HttpMessageConverters``会默认使用``WebMvcConfigurationSupport.addDefaultHttpMessageConverters``中的转换器
+image::10.png[]

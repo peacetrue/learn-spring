@@ -1,0 +1,82 @@
+= spring 网关总结
+
+spring 网关可以做为反向代理服务器使用，类似于 nginx。
+
+== 路由
+
+网关的基本构建模块。它由 ID ，目标 URI ，条件集合和过滤器集合定义。
+如果聚合条件为 true ，则匹配路由。
+
+.application.yml
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: rewrite <1>
+        uri: https://example.org <2>
+        predicates:
+          - Path=/resource-server/** <3>
+        filters:
+          - RewritePath=/resource-server(?<segment>/?.*), $\{segment} <4>
+
+----
+<1> 一个唯一的路由标志
+<2> 条件匹配后，请求的转发地址
+<3> 具体的条件，可以配置多项
+<4> 具体的过滤器，可以配置多项
+
+== 路由条件
+
+spring Cloud Gateway 将路由匹配作为 spring WebFlux HandlerMapping 基础架构的一部分。 spring Cloud Gateway包括许多内置的路由条件工厂。 所有这些条件都与HTTP请求的不同属性匹配。您可以将多个路由条件工厂与逻辑和语句结合使用。
+
+=== After
+
+After：当前请求在指定的时间之后，例如：After=2017-01-20T17:42:47.789-07:00
+//TODO 是否包含指定值
+
+=== Before
+
+当前请求在指定的时间之前，例如：Before=2017-01-20T17:42:47.789-07:00
+
+=== Between
+
+当前请求在指定的时间之间，例如：Between=2017-01-20T17:42:47.789-07:00,2017-01-20T17:42:47.789-07:00
+
+=== Cookie
+
+cookie值匹配指定Java正则表达式，例如：Cookie=chocolate, ch.p
+
+=== Header
+
+header值匹配指定Java正则表达式，例如：Header=X-Request-Id, \d+
+
+=== Host
+
+host值匹配指定值中的一个，ant风格匹配模式，例如：\\**.somehost.org,**.anotherhost.org
+
+=== Method
+
+method值是指定值中的一个，例如：Method=GET,POST
+
+=== query
+
+* 含有指定的查询参数，例如：Query=color
+* 查询参数值匹配java正则表达式，例如：Query=color, re.
+
+=== RemoteAddr
+
+* 远程地址为指定值，例如：RemoteAddr=192.168.1.1
+* 远程地址在指定范围区间，例如：RemoteAddr=192.168.1.1/24
+
+== 路由过滤器
+
+路由过滤器允许以某种方式修改传入的HTTP请求或传出的HTTP响应。 路由过滤器适用于特定路由。
+
+=== AddRequestHeader
+
+添加指定请求头，例如：AddRequestHeader=X-Request-red, blue
+
+== NGINX
+
+spring 网关无法处理静态资源，静态资源这部分必须由 nginx 处理，或者前端统一使用 node 服务器。

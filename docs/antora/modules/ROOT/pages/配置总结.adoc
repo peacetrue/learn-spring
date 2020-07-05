@@ -1,0 +1,183 @@
+= 配置总结
+
+总结在使用 spring 配置信息时，遇到的一些问题。
+
+本文的测试代码位于 config 模块。
+
+== Map VS List
+
+在配置中使用 Map 和 List。
+
+Map 和 List 具有一定的相似性：
+
+通常情况下，Map 的 Key 可以当作 List 的索引，Map 的 Value 可以当作List 的元素，这样二者可以实现互转：
+
+[source%nowrap,yml]
+----
+# 基于 List 的配置
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+# 基于 Map 的配置
+peacetrue:
+  learn:
+    map-static-resources:
+      0:
+        pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      1:
+        pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/
+----
+
+当 List 的元素只有 2 个属性时，Map 的 Key 和 Value 可以用于表示该元素的两个属性：
+
+.元素中含有两个属性：pattern 和 location
+[source%nowrap,yml]
+----
+# 基于 List 的配置
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+# 基于 Map 的配置
+peacetrue:
+  learn:
+    map-static-resources:
+      '[/test/**]': file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      '[/summarize/**]': file:/root/peacetrue/document-antora/public/
+----
+
+List 作为配置时，重复配置是覆盖效果；Map 作为配置时，重复配置是追加效果：
+
+[source%nowrap,yml]
+----
+spring.profiles: list
+
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+---
+# 该配置会完全覆盖上面 list 的配置，效果是重新设置 static-resources
+spring.profiles: list & overwrite
+
+peacetrue:
+  learn:
+    static-resources:
+      - pattern: '/test1/**'
+        location: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      - pattern: '/summarize1/**'
+        location: file:/root/peacetrue/document-antora/public/
+
+---
+
+spring.profiles: map
+
+peacetrue:
+  learn:
+    static-resources:
+      /test/**: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      /summarize/**: file:/root/peacetrue/document-antora/public/
+
+---
+# 该配置会合并上面 map 的配置，效果是 static-resources 包含 4 个条目
+spring.profiles: map & append
+
+peacetrue:
+  learn:
+    static-resources:
+      /test1/**: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      /summarize1/**: file:/root/peacetrue/document-antora/public/
+----
+
+根据这个特性可以根据使用场景合理地选择 Map 和 List。
+
+具体测试参考：`ListTest`、`ListOverwriteTest`、`MapTest`、`MapAppendTest`。
+
+== 存在 List 时执行配置
+
+根据 List 的第一个元素的必须属性判断
+
+属性条件的判断必须精确到最末端的属性
+
+
+== 路径表达式作为 key
+
+路径表达式作为 key 需要转译，将 `路径` 改为 *'[`路径`]'*。
+
+.原始写法
+[source%nowrap,yml]
+----
+peacetrue:
+  learn:
+    static-resources:
+      /test/**: file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      /summarize/**: file:/root/peacetrue/document-antora/public/
+----
+
+.转译后写法
+[source%nowrap,yml]
+----
+peacetrue:
+  learn:
+    static-resources:
+      '[/test/**]': file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/
+      '[/summarize/**]': file:/root/peacetrue/document-antora/public/
+----
+
+== 环境配置
+
+.声明
+* 编程式：`@Profile("test")`
+* 配置式
+** yml 文件：`spring.profiles: test`
+** xml 文件：<beans profile="test">
+
+.激活
+* 编程式：`@ActiveProfiles("test")`，仅测试环境可用
+* 配置式
+** yml 文件：`spring.profiles.active: test`
+** xml 文件：不支持
+
+.总结
+|===
+|配置名 |声明 |激活 |启用 | 备注
+
+|test
+|`@Profile("test")`
+|`@ActiveProfiles("test")`
+|test
+|
+
+|mysql
+|`@Profile("mysql")`
+|`@ActiveProfiles("mysql")`
+|mysql
+|
+
+|test , mysql
+|`@Profile({"test","mysql"})`
+|`@ActiveProfiles("test")` 或者 `@ActiveProfiles("mysql")`
+|test 或者 mysql
+|一个配置对应两个别名，启用其中任意一个都可以
+
+|test & mysql
+|`@Profile({"test & mysql"})`
+|`@ActiveProfiles("test","mysql")`
+|test & mysql
+|必须同时启用 test 和 mysql 配置
+|===
