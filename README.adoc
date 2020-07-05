@@ -1,14 +1,6 @@
-= 学习 spring-framework
+= 学习 spring
 xiayx <xiayouxue@hotmail.com>
 v1.0, 2019-07-19: SNAPSHOT
-:doctype: docbook
-:toc: left
-:numbered:
-:imagesdir: docs/assets/images
-:sourcedir: src/main/java
-:resourcesdir: src/main/resources
-:testsourcedir: src/test/java
-:source-highlighter: highlightjs
 
-学习总结 https://spring.io/projects/spring-framework[spring-framework^]的知识点。
+详情参考 https://peacetrue.cn/summarize/learn-spring/index.html[安宁的博客^]
 
