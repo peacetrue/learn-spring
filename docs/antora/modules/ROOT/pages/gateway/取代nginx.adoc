@@ -117,13 +117,13 @@ public class StaticResourceAutoConfiguration {
 ----
 peacetrue:
   static-resources:
-    '[/test/**]': file:/Users/xiayx/Documents/Projects/peacetrue-microservice/docs/antora/modules/ROOT/pages/ //<1>
-    '[/summarize/**]': file:/root/peacetrue/document-antora/public/ //<2>
-    '[/classpath/**]': classpath:public/ //<3>
+    #路径需要转译
+    '[/test/**]': file:/Users/docs/antora/modules/ROOT/pages/
+    #配置物理路径地址
+    '[/summarize/**]': file:/root/peacetrue/document-antora/public/
+    #配置类路径地址
+    '[/classpath/**]': classpath:public/
 ----
-<1> 路径需要转译
-<2> 配置物理路径地址
-<3> 配置类路径地址
 
 == 案例分析
 

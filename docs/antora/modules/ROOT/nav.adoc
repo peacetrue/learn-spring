@@ -1,7 +1,7 @@
 * xref:index.adoc[简介]
 * xref:WebFlux.adoc[WebFlux 请求响应接口]
 * xref:gateway/使用总结.adoc[spring 网关]
-** xref:gateway/网关取代nginx.adoc[取代 nginx]
+** xref:gateway/取代nginx.adoc[取代 nginx]
 
 //* xref:event.adoc[spring 事件模型]
 //** xref:event/OriginalEventModel.adoc[原始事件模型]
