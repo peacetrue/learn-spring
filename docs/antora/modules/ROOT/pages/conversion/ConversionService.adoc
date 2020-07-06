@@ -1,6 +1,0 @@
-= 类型转换
-
-image::conversion/structure.png[]
-
-
-//== Converter

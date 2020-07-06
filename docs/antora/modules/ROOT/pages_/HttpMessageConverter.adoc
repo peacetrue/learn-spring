@@ -1,5 +1,4 @@
 = HttpMessageConverter
-:imagesdir: ../assets/images
 
 
 使用注解``@ResponseBody``输出JSON数据时，
