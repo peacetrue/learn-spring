@@ -53,7 +53,7 @@ public RouterFunction<ServerResponse> staticResourceLocator() {
 }
 ----
 
-上面的示例，路径以 /static/ 起始的静态资源，会从物理路径 /Users/peacetrue/static/ 下读取，例如：请求 \https://peacetrue.cn/static/index.html 会匹配 /Users/peacetrue/static/index.html 文件。
+上面的示例，路径以 */static/* 起始的静态资源，会从物理路径 */Users/peacetrue/static/* 下读取，例如：请求 *\https://peacetrue.cn/static/index.html* 会匹配 */Users/peacetrue/static/index.html* 文件。
 
 //TODO 提供具体匹配规则
 
@@ -97,7 +97,8 @@ public class StaticResourceAutoConfiguration {
     @ConditionalOnBean(name = "staticResources", value = Map.class)
     public RouterFunction<ServerResponse> staticResourceLocator(ResourceLoader resourceLoader,
                                                                 Map<String, String> staticResources) {
-        if (staticResources.isEmpty()) return null;//<1>
+        //空 `Map` 其实不需要启用配置，但没有 `@ConditionalOnNotEmptyBean` 这种注解， https://stackoverflow.com/questions/62734544/spring-conditionalonproperty-for-bean[此问题^] 待优化
+        if (staticResources.isEmpty()) return null;
         RouterFunctions.Builder builder = RouterFunctions.route();
         staticResources.forEach((key, value) -> {
             log.debug("添加静态资源配置: [{}] -> [{}]", key, value);
@@ -108,7 +109,6 @@ public class StaticResourceAutoConfiguration {
 
 }
 ----
-<1> 空 `Map` 其实不需要启用配置，但没有 `@ConditionalOnNotEmptyBean` 这种注解， https://stackoverflow.com/questions/62734544/spring-conditionalonproperty-for-bean[此问题^] 待优化
 
 //TODO 此问题待优化
 

@@ -2,5 +2,8 @@ name: learn-spring
 title: 学习 spring
 version: master
 start_page: index.adoc
+asciidoc:
+  attributes:
+    numbered: ''
 nav:
   - modules/ROOT/nav.adoc
