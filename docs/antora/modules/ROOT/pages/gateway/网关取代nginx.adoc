@@ -1,8 +1,7 @@
 = spring gateway 取代 nginx
-:numbered:
 :imagesdir: {moduledir}/assets/images/gateway
 
-最近学了 spring gateway，之前都是使用 nginx 作为反向代理服务器，但 nginx 对于笔者来说配置起来比较生疏，现在有了 spring gateway，也可以进行反向代理，作为 java 程序员，配置起来更顺手，所以自然而然地想要用 spring gateway 替换掉 nginx。
+最近学了 spring gateway，之前都是使用 nginx 作为反向代理服务器，但 nginx 比较生疏，现在有了 spring gateway，也可以进行反向代理，作为 java 程序员，配置起来更顺手，所以自然而然地想要用 spring gateway 替换掉 nginx。
 
 == 创建项目
 
