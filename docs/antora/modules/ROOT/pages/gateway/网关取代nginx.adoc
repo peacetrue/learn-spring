@@ -1,14 +1,14 @@
 = spring gateway 取代 nginx
+:numbered:
+:imagesdir: {moduledir}/assets/images/gateway
 
 最近学了 spring gateway，之前都是使用 nginx 作为反向代理服务器，但 nginx 对于笔者来说配置起来比较生疏，现在有了 spring gateway，也可以进行反向代理，作为 java 程序员，配置起来更顺手，所以自然而然地想要用 spring gateway 替换掉 nginx。
 
-//目前实际使用经验比较少，后续不断补充内容。
-
-== 创建 spring gateway 项目
+== 创建项目
 
 创建 spring gateway 的项目，简单地添加依赖 `org.springframework.cloud:spring-cloud-starter-gateway:2.3.0.RELEASE` 后启动运行。
 
-如果执行单元测试需要添加依赖 `testImplementation 'org.springframework.boot:spring-boot-starter-validation'`，否则会报错，具体原因待分析。
+如果执行单元测试需要添加依赖 `testImplementation 'org.springframework.boot:spring-boot-starter-validation'`，否则会报错，具体原因有待进一步分析。
 //TODO 了解具体原因
 
 == 代理动态资源
@@ -22,25 +22,25 @@ spring:
     gateway:
       routes:
         - id: peacetrue-microservice-resource-server
-          uri: lb://peacetrue-microservice-resource-server
+          uri: lb://peacetrue-microservice-resource-server/
           predicates:
             - Path=/resource-server/**
         - id: peacetrue-region
-          uri: lb://peacetrue-region
+          uri: lb://peacetrue-region/
           predicates:
             - Path=/regions/**
         - id: peacetrue-user
-          uri: lb://peacetrue-user
+          uri: lb://peacetrue-user/
           predicates:
             - Path=/users/**
         - id: peacetrue-attachment
-          uri: lb://peacetrue-attachment
+          uri: lb://peacetrue-attachment/
           predicates:
             - Path=/attachments/**
 ----
 
-想要了解更多用法参考 待定。
-//TODO 提供网关文章
+//想要了解更多用法参考 待定。
+//TODO 提供路由配置具体介绍
 
 == 代理静态资源
 
@@ -54,7 +54,9 @@ public RouterFunction<ServerResponse> staticResourceLocator() {
 }
 ----
 
-上面的示例，路径以 /static/ 起始的静态资源，会从物理路径 /Users/peacetrue/static/ 下读取，例如：请求 https://peacetrue.cn/static/index.html 会匹配 /Users/peacetrue/static/index.html 文件。
+上面的示例，路径以 /static/ 起始的静态资源，会从物理路径 /Users/peacetrue/static/ 下读取，例如：请求 \https://peacetrue.cn/static/index.html 会匹配 /Users/peacetrue/static/index.html 文件。
+
+//TODO 提供具体匹配规则
 
 === 配置化支持
 
@@ -123,3 +125,159 @@ peacetrue:
 <1> 路径需要转译
 <2> 配置物理路径地址
 <3> 配置类路径地址
+
+== 案例分析
+
+有一个 node 应用，前端监听在 3000 端口，后端监听在 8001 端口，想统一通过 https 端口 443 访问，并且前端直接挂在主域 peacetrue.cn 下。
+
+之前使用 nginx 配置如下：
+
+.nginx 配置
+[source%nowrap,conf]
+----
+server {
+    listen       443 ssl http2 default_server;
+    server_name  peacetrue.cn;
+    #证书信息
+    ssl_certificate 1_peacetrue.cn_bundle.crt;
+    ssl_certificate_key 2_peacetrue.cn.key;
+    ssl_session_cache shared:SSL:1m;
+    ssl_session_timeout  10m;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # 所有请求默认转发到前端，因为前端直接挂在主域下
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://localhost:3000/;
+    }
+
+    # 以 games 起始的请求转发到后端
+    location /games/ {
+        include /etc/nginx/include/proxy.conf;
+        proxy_pass http://localhost:8001/games/;
+    }
+
+    # 以 socket.io 起始的请求转发到后端
+    location /socket.io/ {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://localhost:8001/socket.io/;
+    }
+
+    # 备案信息
+    location /MP_verify_t4rKSxor2MowtjoC.txt {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://localhost:9000/MP_verify_t4rKSxor2MowtjoC.txt;
+    }
+}
+----
+
+现改为使用 spring gateway 配置如下：
+
+.spring gateway 初始配置
+[source%nowrap,yml]
+----
+#https 配置
+server:
+  port: 443
+  ssl:
+    key-store: file://${user.home}/peacetrue.cn.jks
+    key-alias: peacetrue.cn
+    key-store-password: ${MICROSERVICE_SSL_PASSWORD:password}
+
+#配置动态代理
+spring:
+  cloud:
+    gateway:
+      routes:
+        #前端转发到 3000
+        - id: biog_front
+          uri: http://localhost:3000/
+          predicates:
+            - Path=/**
+        #后端转发到 8001
+        - id: biog_back
+          uri: http://localhost:8001/
+          predicates:
+            - Path=/games/**,/socket.io/**
+#配置静态代理
+peacetrue:
+  static-resources:
+    #备案信息
+    '[/MP_verify_t4rKSxor2MowtjoC.txt]': file:/usr/share/nginx/html/MP_verify_t4rKSxor2MowtjoC.txt
+----
+
+路由会从上到下顺序匹配，所以代理所有请求的 biog_front 必须放在末尾，而且还要保证它的优先级低于静态代理，不然静态代理不会被执行。测试后发现，动态代理的优先级始终高于静态代理，那么就不能使用代理所有请求。调整配置如下：
+
+.spring gateway 子路径配置
+[source%nowrap,yml]
+----
+#配置动态代理
+spring:
+  cloud:
+    gateway:
+      routes:
+        #如果是主域 https://peacetrue.cn/ 直接重定向到 https://peacetrue.cn/game/
+        - id: biog_front
+          uri: https://peacetrue.cn/game/
+          predicates:
+            - Path=/
+          filters:
+            - RedirectTo=302, https://peacetrue.cn/game/
+        #如果是 /game 起始的，去掉 /game 后，进行转发
+        - id: biog_front_game
+          uri: http://localhost:3000/
+          predicates:
+            - Path=/game/**
+          filters:
+            - RewritePath=/game(?<segment>/?.*), $\{segment}
+----
+
+测试发现，访问 \https://peacetrue.cn/ 会重定向到 \https://peacetrue.cn/game/ ，界面可以正常打开，但静态资源全部失效：
+
+image::gateway/转发至game.png[]
+
+静态资源仍然直接访问主域，应该是使用了绝对地址而非相对地址。这样只能找出前端所有的具体请求，然后分别配置代理：
+
+.spring gateway 静态资源配置
+[source%nowrap,yml]
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: biog_front
+          uri: http://localhost:3000/
+          predicates:
+            - Path=/,/*.js,/*.json,/static/**,/_next/**,/room/**
+----
+
+测试后发现一切正常，最终配置如下：
+
+.spring gateway 配置
+[source%nowrap,yml]
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: biog_front
+          uri: http://localhost:3000/
+          predicates:
+            - Path=/,/*.js,/*.json,/static/**,/_next/**,/room/**
+        - id: biog_back
+          uri: http://localhost:8001/
+          predicates:
+            - Path=/games/**,/socket.io/**
+
+peacetrue:
+  static-resources:
+    #不能直接使用 /MP_verify_t4rKSxor2MowtjoC.txt，必须使用匹配模式，简单的将末尾字符改为?: MP_verify_t4rKSxor2Mowtjo?.txt
+    '[/MP_verify_t4rKSxor2Mowtjo?.txt]': file:/usr/share/nginx/html/MP_verify_t4rKSxor2MowtjoC.txt
+----
+
+//== 原文地址

@@ -7,3 +7,6 @@
 == ConditionalOnProperty for Object
 
 see https://stackoverflow.com/questions/62734544/spring-conditionalonproperty-for-bean
+
+== RouterFunctions.pathMatch
+
