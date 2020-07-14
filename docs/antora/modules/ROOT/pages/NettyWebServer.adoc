@@ -1,0 +1,256 @@
+= NettyWebServer 启动运行机制
+
+本文主要介绍 `NettyWebServer` 的启动运行机制。
+
+== 创建过程
+
+在运行 Spring Boot Reactive 应用时，需要在应用内启动一个 `WebServer`，那么 `WebServer` 的启动过程是怎样的呢？通过以下源码：
+
+.WebServerManager
+[source%nowrap,java]
+----
+WebServerManager(ReactiveWebServerApplicationContext applicationContext, ReactiveWebServerFactory factory,
+        Supplier<HttpHandler> handlerSupplier, boolean lazyInit) {
+    this.applicationContext = applicationContext;
+    Assert.notNull(factory, "Factory must not be null");
+    this.handler = new DelayedInitializationHttpHandler(handlerSupplier, lazyInit);
+    this.webServer = factory.getWebServer(this.handler);
+}
+----
+
+可以看出：`WebServer` 是由 `ReactiveWebServerFactory` 在 `WebServerManager` 实例化时创建的。
+
+那么 `ReactiveWebServerFactory` 是怎么创建的呢？通过以下源码：
+
+.ReactiveWebServerFactoryConfiguration.EmbeddedNetty
+[source%nowrap,java]
+----
+@Bean
+NettyReactiveWebServerFactory nettyReactiveWebServerFactory(ReactorResourceFactory resourceFactory,
+        ObjectProvider<NettyRouteProvider> routes, ObjectProvider<NettyServerCustomizer> serverCustomizers) {
+    NettyReactiveWebServerFactory serverFactory = new NettyReactiveWebServerFactory();
+    serverFactory.setResourceFactory(resourceFactory);
+    routes.orderedStream().forEach(serverFactory::addRouteProviders);
+    serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().collect(Collectors.toList()));
+    return serverFactory;
+}
+----
+
+可以看出：在 `ReactiveWebServerFactoryConfiguration.EmbeddedNetty` 中声明了 `NettyReactiveWebServerFactory`。那么 `ReactiveWebServerFactoryConfiguration.EmbeddedNetty` 是如何启用的呢？通过以下源码：
+
+.ReactiveWebServerFactoryAutoConfiguration
+[source%nowrap,java]
+----
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnClass(ReactiveHttpInputMessage.class)
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
+@EnableConfigurationProperties(ServerProperties.class)
+@Import({ ReactiveWebServerFactoryAutoConfiguration.BeanPostProcessorsRegistrar.class,
+		ReactiveWebServerFactoryConfiguration.EmbeddedTomcat.class,
+		ReactiveWebServerFactoryConfiguration.EmbeddedJetty.class,
+		ReactiveWebServerFactoryConfiguration.EmbeddedUndertow.class,
+		ReactiveWebServerFactoryConfiguration.EmbeddedNetty.class })
+public class ReactiveWebServerFactoryAutoConfiguration {...}
+----
+
+可以看出：在 `ReactiveWebServerFactoryAutoConfiguration` 中导入了 `ReactiveWebServerFactoryConfiguration.EmbeddedNetty`。
+
+那么 `WebServerManager` 是怎么创建的呢？通过以下源码：
+
+.ReactiveWebServerApplicationContext.createWebServer
+[source%nowrap,java]
+----
+private void createWebServer() {
+    WebServerManager serverManager = this.serverManager;
+    if (serverManager == null) {
+        String webServerFactoryBeanName = getWebServerFactoryBeanName();
+        ReactiveWebServerFactory webServerFactory = getWebServerFactory(webServerFactoryBeanName);
+        boolean lazyInit = getBeanFactory().getBeanDefinition(webServerFactoryBeanName).isLazyInit();
+        this.serverManager = new WebServerManager(this, webServerFactory, this::getHttpHandler, lazyInit);
+        getBeanFactory().registerSingleton("webServerGracefulShutdown",
+                new WebServerGracefulShutdownLifecycle(this.serverManager));
+        getBeanFactory().registerSingleton("webServerStartStop",
+                new WebServerStartStopLifecycle(this.serverManager));
+    }
+    initPropertySources();
+}
+----
+
+可以看出：`WebServerManager` 是在 `ReactiveWebServerApplicationContext` 中创建的。关于 `ReactiveWebServerApplicationContext` 的创建过程可以参考 link:SpringApplication启动时如何选择ConfigurableApplicationContext.adoc[SpringApplication启动时如何选择ConfigurableApplicationContext^]。
+
+.小结：
+. ReactiveWebServerApplicationContext.createWebServer
+. ReactiveWebServerFactory.getWebServer
+
+== 启动过程
+
+已经创建好了 `WebServer`，那么何时启动呢？通过以下源码：
+
+.WebServerStartStopLifecycle.start
+[source%nowrap,java]
+----
+public void start() {
+    this.weServerManager.start();
+    this.running = true;
+}
+----
+
+可以看出：在 `WebServerStartStopLifecycle.start` 中调用了 `WebServerManager.start`，而 `WebServerManager.start` 又调用了 `WebServer.start`。那么 `WebServerStartStopLifecycle.start` 是何时被调用的呢？在 `ReactiveWebServerApplicationContext.createWebServer` 中，已经将 `WebServerStartStopLifecycle` 注册到了应用上下文，`WebServerStartStopLifecycle` 实现了 `Lifecycle` 接口。通过以下源码：
+
+.DefaultLifecycleProcessor.startBeans
+[source%nowrap,java]
+----
+private void startBeans(boolean autoStartupOnly) {
+    Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
+    Map<Integer, LifecycleGroup> phases = new HashMap<>();
+    lifecycleBeans.forEach((beanName, bean) -> {
+        if (!autoStartupOnly || (bean instanceof SmartLifecycle && ((SmartLifecycle) bean).isAutoStartup())) {
+            int phase = getPhase(bean);
+            LifecycleGroup group = phases.get(phase);
+            if (group == null) {
+                group = new LifecycleGroup(phase, this.timeoutPerShutdownPhase, lifecycleBeans, autoStartupOnly);
+                phases.put(phase, group);
+            }
+            group.add(beanName, bean);
+        }
+    });
+    if (!phases.isEmpty()) {
+        List<Integer> keys = new ArrayList<>(phases.keySet());
+        Collections.sort(keys);
+        for (Integer key : keys) {
+            phases.get(key).start();
+        }
+    }
+}
+----
+
+可以看出：`Lifecycle.start` 会被 `DefaultLifecycleProcessor.startBeans` 调用。完整的调用路径如下：
+
+. SpringApplication.run
+. SpringApplication.refresh
+. ReactiveWebServerApplicationContext.refresh
+. AbstractApplicationContext.finishRefresh
+. DefaultLifecycleProcessor.onRefresh
+
+[source%nowrap,java]
+----
+public void onRefresh() {
+    startBeans(true);
+    this.running = true;
+}
+----
+
+.小结：
+. `ReactiveWebServerApplicationContext.createWebServer`：注册 `WebServerStartStopLifecycle`
+. `DefaultLifecycleProcessor.onRefresh`：触发 `WebServerStartStopLifecycle.start`
+
+== 应用编程
+
+现在服务已经启动了，那么服务启动之后，如何运行我们的代码呢？通过以下源码：
+
+.NettyReactiveWebServerFactory.getWebServer
+[source%nowrap,java]
+----
+public WebServer getWebServer(HttpHandler httpHandler) {
+    HttpServer httpServer = createHttpServer();
+    ReactorHttpHandlerAdapter handlerAdapter = new ReactorHttpHandlerAdapter(httpHandler);
+    NettyWebServer webServer = new NettyWebServer(httpServer, handlerAdapter, this.lifecycleTimeout, getShutdown());
+    webServer.setRouteProviders(this.routeProviders);
+    return webServer;
+}
+----
+
+可以看出：构造 `NettyWebServer` 需要传入 `HttpHandler`，而这个 `HttpHandler` 就是 `NettyWebServer` 处理请求的主要入口。那么 `HttpHandler` 是怎么被创建的呢？通过以下源码：
+
+.HttpHandlerAutoConfiguration.AnnotationConfig
+[source%nowrap,java]
+----
+@Bean
+public HttpHandler httpHandler(ObjectProvider<WebFluxProperties> propsProvider) {
+    HttpHandler httpHandler = WebHttpHandlerBuilder.applicationContext(this.applicationContext).build();
+    WebFluxProperties properties = propsProvider.getIfAvailable();
+    if (properties != null && StringUtils.hasText(properties.getBasePath())) {
+        Map<String, HttpHandler> handlersMap = Collections.singletonMap(properties.getBasePath(), httpHandler);
+        return new ContextPathCompositeHandler(handlersMap);
+    }
+    return httpHandler;
+}
+----
+
+可以看出：`HttpHandler` 是由 `WebHttpHandlerBuilder.applicationContext(ApplicationContext).build()` 构建的。通过以下源码：
+
+.WebHttpHandlerBuilder.applicationContext
+[source%nowrap,java]
+----
+public static WebHttpHandlerBuilder applicationContext(ApplicationContext context) {
+    WebHttpHandlerBuilder builder = new WebHttpHandlerBuilder(
+            context.getBean(WEB_HANDLER_BEAN_NAME, WebHandler.class), context);
+
+    List<WebFilter> webFilters = context
+            .getBeanProvider(WebFilter.class)
+            .orderedStream()
+            .collect(Collectors.toList());
+    builder.filters(filters -> filters.addAll(webFilters));
+    ...
+    return builder;
+}
+----
+
+可以看出： `WebHttpHandlerBuilder` 从 `ApplicationContext` 中取出以下 Bean：
+
+. WebHandler [1] -- 查找 1 个名为 webHandler 的 `WebHandler`
+. WebFilter [0..N] -- 查找 0～n 个 `WebFilter` 并排序
+. WebExceptionHandler [0..N] -- 查找 0～n 个 `WebExceptionHandler` 并排序
+. WebSessionManager [0..1] -- 查找 1 个名为 webSessionManager 的 `webSessionManager`
+. ServerCodecConfigurer [0..1] -- 查找 1 个名为 serverCodecConfigurer 的 `ServerCodecConfigurer`
+. LocaleContextResolver [0..1] -- 查找 1 个名为 localeContextResolver 的 `LocaleContextResolver`
+
+并使用这些 Bean 构建 `HttpHandler`：
+
+.WebHttpHandlerBuilder.build
+[source%nowrap,java]
+----
+public HttpHandler build() {
+
+    WebHandler decorated = new FilteringWebHandler(this.webHandler, this.filters);
+    decorated = new ExceptionHandlingWebHandler(decorated,  this.exceptionHandlers);
+
+    HttpWebHandlerAdapter adapted = new HttpWebHandlerAdapter(decorated);
+    if (this.sessionManager != null) {
+        adapted.setSessionManager(this.sessionManager);
+    }
+    if (this.codecConfigurer != null) {
+        adapted.setCodecConfigurer(this.codecConfigurer);
+    }
+    if (this.localeContextResolver != null) {
+        adapted.setLocaleContextResolver(this.localeContextResolver);
+    }
+    if (this.forwardedHeaderTransformer != null) {
+        adapted.setForwardedHeaderTransformer(this.forwardedHeaderTransformer);
+    }
+    if (this.applicationContext != null) {
+        adapted.setApplicationContext(this.applicationContext);
+    }
+    adapted.afterPropertiesSet();
+
+    return adapted;
+}
+----
+
+最终构建出 `HttpHandler` 类似以下示例：
+
+[source%nowrap,java]
+----
+HttpHandler httpHandler = new HttpWebHandlerAdapter(
+    new ExceptionHandlingWebHandler(
+        new FilteringWebHandler(
+            new DispatcherHandler(...)
+        , this.filters)
+    ,  this.exceptionHandlers)
+);
+----
+
+.小结：
+. `NettyReactiveWebServerFactory.getWebServer(HttpHandler)`
+. `WebHttpHandlerBuilder.applicationContext(ApplicationContext).build()`
