@@ -1,6 +1,13 @@
 = NettyWebServer 启动运行机制
 
-本文主要介绍 `NettyWebServer` 的启动运行机制。
+本文主要介绍 Spring 框架中 `NettyWebServer` 的启动运行机制。
+
+== 版本说明
+
+源码分析基于：
+
+* spring-webflux：5.2.6
+* spring-boot：2.3.0
 
 == 创建过程
 
@@ -58,7 +65,7 @@ public class ReactiveWebServerFactoryAutoConfiguration {...}
 
 那么 `WebServerManager` 是怎么创建的呢？通过以下源码：
 
-.ReactiveWebServerApplicationContext.createWebServer
+.ReactiveWebServerApplicationContext.createWebServer()
 [source%nowrap,java]
 ----
 private void createWebServer() {
@@ -80,14 +87,15 @@ private void createWebServer() {
 可以看出：`WebServerManager` 是在 `ReactiveWebServerApplicationContext` 中创建的。关于 `ReactiveWebServerApplicationContext` 的创建过程可以参考 link:SpringApplication启动时如何选择ConfigurableApplicationContext.adoc[SpringApplication启动时如何选择ConfigurableApplicationContext^]。
 
 .小结：
-. ReactiveWebServerApplicationContext.createWebServer
-. ReactiveWebServerFactory.getWebServer
+. `ReactiveWebServerApplicationContext.createWebServer()`
+. `new WebServerManager(...,ReactiveWebServerFactory,...)`
+. `ReactiveWebServerFactory.getWebServer(HttpHandler)`
 
 == 启动过程
 
 已经创建好了 `WebServer`，那么何时启动呢？通过以下源码：
 
-.WebServerStartStopLifecycle.start
+.WebServerStartStopLifecycle.start()
 [source%nowrap,java]
 ----
 public void start() {
@@ -96,9 +104,9 @@ public void start() {
 }
 ----
 
-可以看出：在 `WebServerStartStopLifecycle.start` 中调用了 `WebServerManager.start`，而 `WebServerManager.start` 又调用了 `WebServer.start`。那么 `WebServerStartStopLifecycle.start` 是何时被调用的呢？在 `ReactiveWebServerApplicationContext.createWebServer` 中，已经将 `WebServerStartStopLifecycle` 注册到了应用上下文，`WebServerStartStopLifecycle` 实现了 `Lifecycle` 接口。通过以下源码：
+可以看出：在 `WebServerStartStopLifecycle.start()` 中调用了 `WebServerManager.start()`，而 `WebServerManager.start()` 又调用了 `WebServer.start()`。那么 `WebServerStartStopLifecycle.start()` 是何时被调用的呢？在 `ReactiveWebServerApplicationContext.createWebServer` 中，已经将 `WebServerStartStopLifecycle` 注册到了应用上下文，`WebServerStartStopLifecycle` 实现了 `Lifecycle` 接口。通过以下源码：
 
-.DefaultLifecycleProcessor.startBeans
+.DefaultLifecycleProcessor.startBeans(boolean)
 [source%nowrap,java]
 ----
 private void startBeans(boolean autoStartupOnly) {
@@ -125,7 +133,7 @@ private void startBeans(boolean autoStartupOnly) {
 }
 ----
 
-可以看出：`Lifecycle.start` 会被 `DefaultLifecycleProcessor.startBeans` 调用。完整的调用路径如下：
+可以看出：`Lifecycle.start()` 会被 `DefaultLifecycleProcessor.startBeans(boolean)` 调用。从应用启动到 `WebServer.start()`，完整的调用路径如下：
 
 . SpringApplication.run
 . SpringApplication.refresh
@@ -142,8 +150,8 @@ public void onRefresh() {
 ----
 
 .小结：
-. `ReactiveWebServerApplicationContext.createWebServer`：注册 `WebServerStartStopLifecycle`
-. `DefaultLifecycleProcessor.onRefresh`：触发 `WebServerStartStopLifecycle.start`
+. `ReactiveWebServerApplicationContext.createWebServer()`：注册 `WebServerStartStopLifecycle`
+. `DefaultLifecycleProcessor.onRefresh()`：触发 `WebServerStartStopLifecycle.start()`
 
 == 应用编程
 
@@ -254,3 +262,7 @@ HttpHandler httpHandler = new HttpWebHandlerAdapter(
 .小结：
 . `NettyReactiveWebServerFactory.getWebServer(HttpHandler)`
 . `WebHttpHandlerBuilder.applicationContext(ApplicationContext).build()`
+
+== 彩蛋
+
+查看源码过程中，发现一个 BUG，已上报到 https://github.com/spring-projects/spring-framework/issues/25389[spring-framework^]。
