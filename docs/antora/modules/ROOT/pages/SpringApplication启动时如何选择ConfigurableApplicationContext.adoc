@@ -1,4 +1,14 @@
-= SpringApplication 启动时如何选择 ConfigurableApplicationContext
+= SpringApplication 启动时如何实例化 ConfigurableApplicationContext
+
+本文主要说明在调用 `SpringApplication.run(...)` 时，如何实例化 `ConfigurableApplicationContext`，也即是如何选择 `ConfigurableApplicationContext` 的子类。
+
+== 版本说明
+
+源码分析基于：
+
+* spring-boot：2.3.0
+
+==  web 应用类型
 
 通常会像下面这样启动 Spring Boot 应用：
 
@@ -13,9 +23,9 @@ public class ClientInnerApplication {
 }
 ----
 
-`SpringApplication.run` 会返回一个 `ConfigurableApplicationContext`，那么 `ConfigurableApplicationContext` 的实例类型是如何确定呢？以下源码展示出 `ConfigurableApplicationContext` 的创建过程：
+`SpringApplication.run` 会返回一个 `ConfigurableApplicationContext`，那么 `ConfigurableApplicationContext` 的实例类型是如何确定呢？通过以下源码：
 
-.SpringApplication.createApplicationContext
+.SpringApplication.createApplicationContext()
 [source%nowrap,java]
 ----
 protected ConfigurableApplicationContext createApplicationContext() {
@@ -42,7 +52,7 @@ protected ConfigurableApplicationContext createApplicationContext() {
 }
 ----
 
-可以看到是通过 `webApplicationType` 判断的，不同的 `webApplicationType` 类型选择不同的 `ConfigurableApplicationContext` 子类。那么 `webApplicationType` 的值是怎么确定的呢？以下源码展示出 `webApplicationType` 是在 SpringApplication 实例化时，获取了 `WebApplicationType.deduceFromClasspath()` 的返回值：
+可以看出：是通过 `webApplicationType` 判断的。不同的 `webApplicationType` 选择不同的 `ConfigurableApplicationContext` 子类。那么 `webApplicationType` 的值是怎么确定的呢？通过以下源码：
 
 .SpringApplication
 [source%nowrap,java]
@@ -58,9 +68,9 @@ public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySourc
 }
 ----
 
-`WebApplicationType.deduceFromClasspath()` 会根据运行时环境中是否存在应用上下文关联的特定类返回不同的 `WebApplicationType`。以下是 `WebApplicationType.deduceFromClasspath` 的源码：
+可以看出：`webApplicationType` 是在 `SpringApplication` 实例化时，获取了 `WebApplicationType.deduceFromClasspath()` 的返回值。那么 `WebApplicationType.deduceFromClasspath()` 是如何选择 `WebApplicationType` 的呢？通过以下源码：
 
-.WebApplicationType.deduceFromClasspath
+.WebApplicationType.deduceFromClasspath()
 [source%nowrap,java]
 ----
 static WebApplicationType deduceFromClasspath() {
@@ -77,24 +87,28 @@ static WebApplicationType deduceFromClasspath() {
 }
 ----
 
-.总结
+可以看出：`WebApplicationType.deduceFromClasspath()` 会根据运行时环境中是否存在应用上下文关联的特定类返回不同的 `WebApplicationType`。
+
+== 总结
+
+[cols="1,4,3,3"]
 |===
 |应用类型 |类型说明 |判断条件 |具体子类
 
 |SERVLET
 |该应用程序应作为基于 Servlet 的 Web 应用程序运行，并应启动嵌入式 Servlet Web 服务器
 |存在 Servlet 和 ConfigurableWebApplicationContext
-|AnnotationConfigServletWebServerApplicationContext
+|AnnotationConfigServlet WebServerApplicationContext
 
 |REACTIVE
 |该应用程序应作为 reactive Web 应用程序运行，并应启动嵌入式 reactive Web 服务器
 |存在 DispatcherHandler 并且不存在 DispatcherServlet 或 ServletContainer
-|AnnotationConfigReactiveWebServerApplicationContext
+|AnnotationConfigReactive WebServerApplicationContext
 
 |NONE
 |该应用程序不应作为 Web 应用程序运行，也不应启动嵌入式 Web 服务器。
 |不是上面两种情况
-|AnnotationConfigApplicationContext
+|AnnotationConfig ApplicationContext
 |===
 
 为方便表格展示，省去了类的完整路径：
