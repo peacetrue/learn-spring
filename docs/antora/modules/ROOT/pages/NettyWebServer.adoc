@@ -210,7 +210,7 @@ public static WebHttpHandlerBuilder applicationContext(ApplicationContext contex
 . WebHandler [1] -- 查找 1 个名为 webHandler 的 `WebHandler`
 . WebFilter [0..N] -- 查找 0～n 个 `WebFilter` 并排序
 . WebExceptionHandler [0..N] -- 查找 0～n 个 `WebExceptionHandler` 并排序
-. WebSessionManager [0..1] -- 查找 1 个名为 webSessionManager 的 `webSessionManager`
+. WebSessionManager [0..1] -- 查找 1 个名为 webSessionManager 的 `WebSessionManager`
 . ServerCodecConfigurer [0..1] -- 查找 1 个名为 serverCodecConfigurer 的 `ServerCodecConfigurer`
 . LocaleContextResolver [0..1] -- 查找 1 个名为 localeContextResolver 的 `LocaleContextResolver`
 
