@@ -1,0 +1,290 @@
+= Spring Security OAuth2 授权码认证流程源码分析
+
+本文讲解 *授权码认证流程* 在 Spring Security 中的源码实现（仅针对 Reactive 应用）。参考 https://docs.spring.io/spring-security/site/docs/5.4.0-M1/reference/html5/#reactive-applications[Spring Security 官网文档^]。
+
+== 版本说明
+
+源码分析基于：
+
+* spring-webflux：5.2.6
+* spring-boot：2.3.0
+* spring-security：5.3.2
+* spring-cloud：2.2.2
+
+== 案例分析
+
+在 Spring Reactive 应用中，目前日志记录得很粗略，发生异常看不出具体原因，而且调试很困难，因为代码不是顺序执行的。
+
+下面是一则案例，描述在授权码认证流程中出现的异常，日志级别基于 TRACE：
+
+访问内部应用 https://peacetrue.cn:8530 后，系统发现未登录，重定向到认证授权中心：
+
+image::security/认证授权中心登陆页.png[]
+
+后台日志信息如下：
+
+[source%nowrap,log]
+----
+2020-07-14 10:47:09.806 TRACE 13486 --- [freshExecutor-0] o.s.c.netflix.eureka.CloudEurekaClient   : onCacheRefreshed called with count: 3
+2020-07-14 10:47:14.592 TRACE 13486 --- [ctor-http-nio-2] o.s.w.s.adapter.HttpWebHandlerAdapter    : [2cabe2be-1] HTTP GET "/", headers={masked}
+2020-07-14 10:47:14.647 DEBUG 13486 --- [oundedElastic-1] o.s.w.s.s.DefaultWebSessionManager       : Created new WebSession.
+2020-07-14 10:47:14.664 DEBUG 13486 --- [oundedElastic-1] .s.u.m.MediaTypeServerWebExchangeMatcher : httpRequestMediaTypes=[text/html, application/xhtml+xml, image/webp, image/apng, application/xml;q=0.9, application/signed-exchange;v=b3;q=0.9, */*;q=0.8]
+2020-07-14 10:47:14.664 DEBUG 13486 --- [oundedElastic-1] .s.u.m.MediaTypeServerWebExchangeMatcher : Processing text/html
+2020-07-14 10:47:14.664 DEBUG 13486 --- [oundedElastic-1] .s.u.m.MediaTypeServerWebExchangeMatcher : text/html .isCompatibleWith text/html = true
+2020-07-14 10:47:14.666 TRACE 13486 --- [oundedElastic-1] o.s.w.s.adapter.HttpWebHandlerAdapter    : [2cabe2be-1] Completed 302 FOUND, headers={masked}
+2020-07-14 10:47:14.673 TRACE 13486 --- [oundedElastic-1] o.s.h.s.r.ReactorHttpHandlerAdapter      : [2cabe2be-1] Handling completed
+2020-07-14 10:47:14.709 TRACE 13486 --- [ctor-http-nio-2] o.s.w.s.adapter.HttpWebHandlerAdapter    : [2cabe2be-2] HTTP GET "/oauth2/authorization/peacetrue", headers={masked}
+2020-07-14 10:47:14.716 TRACE 13486 --- [ctor-http-nio-2] o.s.w.s.adapter.HttpWebHandlerAdapter    : [2cabe2be-2] Completed 302 FOUND, headers={masked}
+2020-07-14 10:47:14.717 TRACE 13486 --- [ctor-http-nio-2] o.s.h.s.r.ReactorHttpHandlerAdapter      : [2cabe2be-2] Handling completed
+----
+
+在认证授权中心登陆并许可后，重定向回内部应用，页面提示 `Invalid credentials`：
+
+image::security/授权码登陆失败.png[]
+
+后台日志信息如下：
+
+[source%nowrap,log]
+----
+2020-07-14 10:53:38.809 TRACE 13486 --- [ctor-http-nio-3] o.s.w.s.adapter.HttpWebHandlerAdapter    : [8cb9eef6-3] HTTP GET "/login/oauth2/code/peacetrue?code=8e5IEdJsv7&state=kCyPbWgbbzYpskX0jmiDz0zp7L2W-Pe-oLueSW1nrmA%3D", headers={masked}
+2020-07-14 10:53:38.914 TRACE 13486 --- [ctor-http-nio-3] o.s.w.r.f.client.ExchangeFunctions       : [670aa87e] HTTP POST https://peacetrue.cn:8443/uaa/oauth/token, headers={masked}
+2020-07-14 10:53:39.165 TRACE 13486 --- [ctor-http-nio-4] o.s.http.codec.FormHttpMessageWriter     : [670aa87e] Writing form fields [grant_type, code, redirect_uri] (content masked)
+2020-07-14 10:53:39.317 TRACE 13486 --- [ctor-http-nio-4] o.s.w.r.f.client.ExchangeFunctions       : [670aa87e] Response 200 OK, headers={masked}
+2020-07-14 10:53:39.338 TRACE 13486 --- [ctor-http-nio-4] o.s.http.codec.json.Jackson2JsonDecoder  : [670aa87e] Decoded [{access_token=eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vcGVhY2V0cnVlLmNuOjg0NDMvdWFhL3Rva2VuX2tleXMiLCJraWQiOiJsZWdhY3ktdG9rZW4ta2V5IiwidHlwIjoiSldUIn0.eyJqdGkiOiI3OWU5ZTI1YjBmMTk0ZDZhYWVmZTBmN2YxMzdjNTc1ZCIsIm5vbmNlIjoiR2dZRlRWOUxwb2hCaG1NdW4ybXJraXpkR1JWd0toX2VwbWkzV25WZ3doRSIsInN1YiI6IjA2OTFjY2YzLWI2M2YtNGFhYy1hMTg4LTE3Y2UxZDAxNDAzOCIsInNjb3BlIjpbIm9wZW5pZCIsIm1lc3NhZ2Uud3JpdGUiXSwiY2xpZW50X2lkIjoicGVhY2V0cnVlIiwiY2lkIjoicGVhY2V0cnVlIiwiYXpwIjoicGVhY2V0cnVlIiwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfaWQiOiIwNjkxY2NmMy1iNjNmLTRhYWMtYTE4OC0xN2NlMWQwMTQwMzgiLCJvcmlnaW4iOiJ1YWEiLCJ1c2VyX25hbWUiOiJwZWFjZXRydWUiLCJlbWFpbCI6InBlYWNldHJ1ZUBwZWFjZXRydWUuY24iLCJhdXRoX3RpbWUiOjE1OTQ2OTUyMTgsInJldl9zaWciOiJkNGVmMTMwYSIsImlhdCI6MTU5NDY5NTIxOSwiZXhwIjoxNTk0Njk1MjE5LCJpc3MiOiJodHRwczovL3BlYWNldHJ1ZS5jbjo4NDQzL3VhYS9vYXV0aC90b2tlbiIsInppZCI6InVhYSIsImF1ZCI6WyJwZWFjZXRydWUiLCJvcGVuaWQiLCJtZXNzYWdlIl19.CRLvCpSlRvNEhtCjSxiHrPQhHZ4vzbUH9nCZJkBOBzE2Slev2SlxYwLuzYgw4rmwCayxsVWBURBsg6pKFwg-hotj0g2LATk6pUYx9H1N8FxUhe-G51q9N5NzhCziNmQJBro8q6ZlQSu2LzgzDzJdLgGYPr3dgHZ8J9f09kSukHWshoLf23A5RIHfNFTYxICI336zxLX242LBt-7Xt0ZVVzAKAEKJvWGlmC2tNrKNPiz2cfbmdHC7E-_dsR2E_oD-l2JY2-qedb1wfJrvOqeB7oS6gatc_u6huSXOo-Bo2rVZfV-Fz5W8P6VVxBj7NeuEprDc_KsC3R4rmNIu4h2ERw, token_type=bearer, id_token=eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vcGVhY2V0cnVlLmNuOjg0NDMvdWFhL3Rva2VuX2tleXMiLCJraWQiOiJsZWdhY3ktdG9rZW4ta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIwNjkxY2NmMy1iNjNmLTRhYWMtYTE4OC0xN2NlMWQwMTQwMzgiLCJhdWQiOlsicGVhY2V0cnVlIl0sImlzcyI6Imh0dHBzOi8vcGVhY2V0cnVlLmNuOjg0NDMvdWFhL29hdXRoL3Rva2VuIiwiZXhwIjoxNTk0Njk1MjE5LCJpYXQiOjE1OTQ2OTUyMTksImFtciI6WyJwd2QiXSwiYXpwIjoicGVhY2V0cnVlIiwic2NvcGUiOlsib3BlbmlkIl0sIm5vbmNlIjoiR2dZRlRWOUxwb2hCaG1NdW4ybXJraXpkR1JWd0toX2VwbWkzV25WZ3doRSIsImVtYWlsIjoicGVhY2V0cnVlQHBlYWNldHJ1ZS5jbiIsInppZCI6InVhYSIsIm9yaWdpbiI6InVhYSIsImp0aSI6Ijc5ZTllMjViMGYxOTRkNmFhZWZlMGY3ZjEzN2M1NzVkIiwicHJldmlvdXNfbG9nb25fdGltZSI6MTU5NDY5MDMxMzY4MCwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNsaWVudF9pZCI6InBlYWNldHJ1ZSIsImNpZCI6InBlYWNldHJ1ZSIsImdyYW50X3R5cGUiOiJhdXRob3JpemF0aW9uX2NvZGUiLCJ1c2VyX25hbWUiOiJwZWFjZXRydWUiLCJyZXZfc2lnIjoiZDRlZjEzMGEiLCJ1c2VyX2lkIjoiMDY5MWNjZjMtYjYzZi00YWFjLWExODgtMTdjZTFkMDE0MDM4IiwiYXV0aF90aW1lIjoxNTk0Njk1MjE4fQ.hqPgb5VHsvsUq-60DaVCaAWHZAwGK2mdm_rFyeWg5B5mFqHADVm-xsAcrRM7CpDTxzm9rP89yHlXN4b6GiJiz2AeLBGrQ_hlFH9APZsfn1ct3hYNs2JrTcUqqhAbhwpLXf5VPy8_UM6FVX4zYzMAzu9gecxljgr5Qs-cbUKRjYpdnjzcgT7HcBZeNpLqeU_SZDrF9rutG9HKa_9abRTSrj36v7nKOMylyCjNeA5zz2dYR55xqWsep8-VSZZvJhGQ7iDh1sl-wKOONRTQxz0QFPdzyEx49-w1EAs3gNVndMrwclJ-l7vEUZRCmB5e1S4LY_nAK0r4Xrqi_4aSrBSjBQ, expires_in=0, scope=openid message.write, nonce=GgYFTV9LpohBhmMun2mrkizdGRVwKh_epmi3WnVgwhE, jti=79e9e25b0f194d6aaefe0f7f137c575d}]
+2020-07-14 10:53:39.404 TRACE 13486 --- [ctor-http-nio-4] o.s.w.r.f.client.ExchangeFunctions       : [530da76a] HTTP GET https://peacetrue.cn:8443/uaa/token_keys, headers={}
+2020-07-14 10:53:39.420 TRACE 13486 --- [ctor-http-nio-4] o.s.w.r.f.client.ExchangeFunctions       : [530da76a] Response 200 OK, headers={masked}
+2020-07-14 10:53:39.424 TRACE 13486 --- [ctor-http-nio-4] o.s.core.codec.StringDecoder             : [530da76a] Decoded "{"keys":[{"kty":"RSA","e":"AQAB","use":"sig","kid":"legacy-token-key","alg":"RS256","value":"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz9OZiz3FGmNrCmJeXlms\nXG0I4Pz/h8uSrfow4dWi+6Lh/6SOxb+/AlLJZd3vJFflRcDgIubbHb7AnjbBKzeE\nHmWLWBDTalyv7inNtNwZKO3vsLF3OoGHCxiyz6+YrlwrL4VXeKDbbglAT2QFTPcT\n0iPiF/pRhZvVvS5H9p4/lFPlrOccqYVm16xxrlnuY44CqF//LM6Cnse9itsKogpB\nD9ch0Iea1hFtWNWtraJuENWLh1rYPVSaIstc4XEBOVCJClCdhoNyZh9SyY56LMKV\nTEe2lfLSiwHXzW3hgbSPhuygCB899Yzy3RvjxGWQbLuj46Q4fRaDh95xo5713sv0\nVwIDAQAB\n-----END PUBLIC KEY-----","n":"AM_TmYs9xRpjawpiXl5ZrFxtCOD8_4fLkq36MOHVovui4f-kjsW_vwJSyWXd7yRX5UXA4CLm2x2-wJ42wSs3hB5li1gQ02pcr-4pzbTcGSjt77CxdzqBhwsYss-vmK5cKy-FV3ig224JQE9kBUz3E9Ij4hf6UYWb1b0uR_aeP5RT5aznHKmFZtesca5Z7mOOAqhf_yzOgp7HvYrbCqIKQQ_XIdCHmtYRbVjVra2ibhDVi4da2D1UmiLLXOFxATlQiQpQnYaDcmYfUsmOeizClUxHtpXy0osB181t4YG0j4bsoAgfPfWM8t0b48RlkGy7o-OkOH0Wg4fecaOe9d7L9Fc"}]}"
+2020-07-14 10:53:39.435 TRACE 13486 --- [ctor-http-nio-4] o.s.w.s.adapter.HttpWebHandlerAdapter    : [8cb9eef6-3] Completed 302 FOUND, headers={masked}
+2020-07-14 10:53:39.435 TRACE 13486 --- [ctor-http-nio-4] o.s.h.s.r.ReactorHttpHandlerAdapter      : [8cb9eef6-3] Handling completed
+2020-07-14 10:53:39.439 TRACE 13486 --- [ctor-http-nio-3] o.s.w.s.adapter.HttpWebHandlerAdapter    : [8cb9eef6-4] HTTP GET "/login?error", headers={masked}
+2020-07-14 10:53:39.450 TRACE 13486 --- [ctor-http-nio-3] o.s.w.s.adapter.HttpWebHandlerAdapter    : [8cb9eef6-4] Completed 200 OK, headers={masked}
+2020-07-14 10:53:39.450 TRACE 13486 --- [ctor-http-nio-3] o.s.h.s.r.ReactorHttpHandlerAdapter      : [8cb9eef6-4] Handling completed
+----
+
+从日志中看不出任何异常信息，无法有效定位问题。通过正常的日志信息，可以看出已经取得了 `access_token`，推测异常大概原因是 `access_token` 验证失败。
+
+如果不熟悉源码，很难定位并解决问题。因此，笔者详细地梳理了整个流程在源码中的实现。
+
+== 配置安全策略
+
+在启动应用前，需要配置应用的安全策略。以下是配置基于 OAuth2 授权码认证的示例：
+
+.WebFluxSecurityConfig
+[source%nowrap,java]
+----
+@EnableWebFluxSecurity
+public class WebFluxSecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        http
+                .authorizeExchange(exchanges ->
+                        //任何请求都需要认证
+                        exchanges.anyExchange().authenticated()
+                )
+                //使用 OAuth2 授权码认证
+                .oauth2Login(withDefaults());
+        return http.build();
+    }
+}
+----
+
+上面的配置通过 `ServerHttpSecurity` 构建出 `SecurityWebFilterChain`，那么 `ServerHttpSecurity` 是从哪里来的，`SecurityWebFilterChain` 又有什么用呢？
+
+=== ServerHttpSecurity 的来源
+
+通过以下源码：
+
+.ServerHttpSecurityConfiguration
+[source%nowrap,java]
+----
+@Bean(HTTPSECURITY_BEAN_NAME)
+@Scope("prototype")
+public ServerHttpSecurity httpSecurity() {
+    ContextAwareServerHttpSecurity http = new ContextAwareServerHttpSecurity();
+    return http
+        .authenticationManager(authenticationManager())
+        .headers().and()
+        .logout().and();
+}
+----
+
+可以看出：在 `ServerHttpSecurityConfiguration` 中声明了 `ServerHttpSecurity`。`httpSecurity()` 方法基于属性级别，也就是说可以在多个配置文件中，通过 `ServerHttpSecurity` 构建出多个 `SecurityWebFilterChain`。示例如下：
+
+.WebFluxSecurityConfig
+[source%nowrap,java]
+----
+public class WebFluxSecurityConfig {
+
+    @EnableWebFluxSecurity
+    public static class WebFluxSecurityConfigApi {
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChainApi(ServerHttpSecurity http) {
+            http
+                    .authorizeExchange(exchanges ->
+                            exchanges.pathMatchers("/api/**").authenticated()
+                    )
+                    .oauth2Login(withDefaults());
+            return http.build();
+        }
+    }
+
+    @EnableWebFluxSecurity
+    public static class WebFluxSecurityConfigDefault {
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChainDefault(ServerHttpSecurity http) {
+            http
+                    .authorizeExchange(exchanges ->
+                            exchanges.anyExchange().authenticated()
+                    )
+                    .oauth2Login(withDefaults());
+            return http.build();
+        }
+    }
+}
+----
+
+=== SecurityWebFilterChain 的用途
+
+在介绍 `SecurityWebFilterChain` 的用途之前，先要了解 `SecurityWebFilterChain` 是如何载入容器的。通过以下源码：
+
+.WebFluxSecurityConfiguration
+[source%nowrap,java]
+----
+@Autowired(required = false)
+void setSecurityWebFilterChains(List<SecurityWebFilterChain> securityWebFilterChains) {
+    this.securityWebFilterChains = securityWebFilterChains;
+}
+----
+
+可以看出：`securityWebFilterChains` 被自动注入到 `WebFluxSecurityConfiguration` 中。那么 `WebFluxSecurityConfiguration.securityWebFilterChains` 有什么用呢？通过以下源码：
+
+.WebFluxSecurityConfiguration
+[source%nowrap,java]
+----
+@Bean(SPRING_SECURITY_WEBFILTERCHAINFILTER_BEAN_NAME)
+@Order(value = WEB_FILTER_CHAIN_FILTER_ORDER)
+public WebFilterChainProxy springSecurityWebFilterChainFilter() {
+    return new WebFilterChainProxy(getSecurityWebFilterChains());
+}
+----
+
+可以看出：`securityWebFilterChains` 被用于构建 `WebFilterChainProxy`。`WebFilterChainProxy` 作为 `WebFilter` 会被 `NettyWebServer` 应用于处理请求。关于 `WebFilter` 的应用过程可以参考 link:../NettyWebServer.adoc[NettyWebServer 启动运行机制^]。
+
+== 安全处理过程
+
+安全处理主要是通过 `WebFilter` 实现的。`WebFilter` 经过 `WebFilterChainProxy` 和 `SecurityWebFilterChain` 的封装后可以用于处理安全请求。那么在安全处理过程中主要涉及哪些 `WebFilter` 呢？通过以下源码：
+
+.ServerHttpSecurity
+[source%nowrap,java]
+----
+public SecurityWebFilterChain build() {
+    //内容太多，删掉简化
+    ...
+    return new MatcherSecurityWebFilterChain(getSecurityMatcher(), sortedWebFilters);
+}
+----
+
+可以看出，`sortedWebFilters` 中主要包含以下 `WebFilter`：
+
+. ServerWebExchangeReactorContextWebFilter
+. HttpHeaderWriterWebFilter
+. CsrfWebFilter
+. ReactorContextWebFilter
+. OAuth2AuthorizationRequestRedirectWebFilter
+. OAuth2LoginAuthenticationWebFilter
+. LoginPageGeneratingWebFilter
+. LogoutPageGeneratingWebFilter
+. SecurityContextServerWebExchangeWebFilter
+. ServerRequestCacheWebFilter
+. LogoutWebFilter
+. ExceptionTranslationWebFilter
+. AuthorizationWebFilter
+
+在 `SecurityWebFiltersOrder` 中定义了 `WebFilter` 的顺序。以下主要介绍在认证和授权时使用到的 `WebFilter`。
+
+=== AuthorizationWebFilter
+
+`AuthorizationWebFilter` 用于验证当前用户是否允许访问请求的资源。它会拦截所有请求，所以位于整个 `WebFilterChain` 的末尾。`AuthorizationWebFilter` 使用 `DelegatingReactiveAuthorizationManager` 执行验证。
+
+`ReactiveAuthorizationManager` 的实现类包括：
+
+DelegatingReactiveAuthorizationManager::
+根据不同的请求选择不同的 `ReactiveAuthorizationManager` 实现。
+AuthenticatedReactiveAuthorizationManager::
+当前用户不是匿名并且已进行身份认证。
+AuthorityReactiveAuthorizationManager::
+当前用户已进行身份认证并且具有访问资源的权限。
+
+如果验证失败，会抛出 `new AccessDeniedException("Access Denied")`，该异常会被 `ExceptionTranslationWebFilter` 捕获。
+
+=== ExceptionTranslationWebFilter
+
+`ExceptionTranslationWebFilter` 用于处理 `AccessDeniedException`。如果当前用户没有通过身份认证，则使用 `ServerAuthenticationEntryPoint` 处理；如果已通过身份认证但权限不足，则使用 `ServerAccessDeniedHandler` 处理。
+
+* `ServerAuthenticationEntryPoint` 用于请求认证。既然用户没有认证过身份，那么就让他去认证身份。其子类实现逻辑通常是重定向到登陆页让用户登陆。
+* `ServerAccessDeniedHandler` 用于处理权限不足异常。权限不足需要管理员重新为用户赋予权限，其子类实现逻辑通常是返回权限不足的消息提示。
+
+在上面的案例中，如果未登陆会使用 `RedirectServerAuthenticationEntryPoint` 重定向至 */oauth2/authorization/peacetrue*。而请求 */oauth2/authorization/peacetrue* 会被 `OAuth2AuthorizationRequestRedirectWebFilter` 处理。
+
+=== OAuth2AuthorizationRequestRedirectWebFilter
+
+`OAuth2AuthorizationRequestRedirectWebFilter` 用于向认证授权中心请求授权码。主要逻辑包括：
+
+. 使用 `DefaultServerOAuth2AuthorizationRequestResolver.resolve(ServerWebExchange)` 解析出 `OAuth2AuthorizationRequest`，仅解析匹配 */oauth2/authorization/\{registrationId}* 的请求
+. 使用 `WebSessionOAuth2ServerAuthorizationRequestRepository.saveAuthorizationRequest` 保存 `OAuth2AuthorizationRequest`
+. 使用 `DefaultServerRedirectStrategy.sendRedirect` 重定向到认证授权中心
+
+为什么要解析出 `OAuth2AuthorizationRequest` 呢？因为 `OAuth2AuthorizationRequest` 中包含着授权码认证所需的全部数据：
+
+.授权码请求
+image::security/授权码认证流程分析/授权码请求.png[]
+
+为什么要保存 `OAuth2AuthorizationRequest` 呢？下一步通过授权码获取 `access_token` 会用到。
+
+在认证授权中心允许（或拒绝）后，会重定向到 https://peacetrue.cn:8530/login/oauth2/code/peacetrue ，而请求 */login/oauth2/code/peacetrue* 会被 `OAuth2LoginAuthenticationWebFilter` 处理。
+
+=== OAuth2LoginAuthenticationWebFilter
+
+`OAuth2LoginAuthenticationWebFilter` 用于验证当前用户是否有效。其主要逻辑包括：
+
+. 使用 `PathPatternParserServerWebExchangeMatcher.matches` 判断请求是否匹配 */login/oauth2/code/\{registrationId}*
+. 使用 `ServerOAuth2AuthorizationCodeAuthenticationTokenConverter.convert` 转换出当前用户
+. 使用 `DelegatingReactiveAuthenticationManager.authenticate` 验证当前用户是否有效
+. 有效用户，触发 `RedirectServerAuthenticationSuccessHandler.onAuthenticationSuccess`
+. 无效用户，触发 `RedirectServerAuthenticationFailureHandler.onAuthenticationFailure`
+
+==== 转换出当前用户
+
+第二步是如何转换出当前用户的呢？在 `OAuth2AuthorizationRequestRedirectWebFilter` 中已经使用 `WebSessionOAuth2ServerAuthorizationRequestRepository.saveAuthorizationRequest` 保存了 `OAuth2AuthorizationRequest`，此时再通过 `WebSessionOAuth2ServerAuthorizationRequestRepository.removeAuthorizationRequest` 取出（并移除）`OAuth2AuthorizationRequest`，并将 `OAuth2AuthorizationRequest` 和 `ServerWebExchange` 转换为 `OAuth2AuthorizationCodeAuthenticationToken`（未验证的当前用户），详细信息包括：
+
+.OAuth2AuthorizationCodeAuthenticationToken
+image::security/授权码认证流程分析/OAuth2AuthorizationCodeAuthenticationToken.png[]
+
+==== 验证当前用户
+
+第三步是如何验证当前用户的呢？`DelegatingReactiveAuthenticationManager` 实际上会使用以下两个 `ReactiveAuthenticationManager`：
+
+. `OidcAuthorizationCodeReactiveAuthenticationManager`
+. `OAuth2LoginReactiveAuthenticationManager`
+
+`OidcAuthorizationCodeReactiveAuthenticationManager` 用于构建已认证的 `OAuth2LoginAuthenticationToken`（已验证的当前用户）。主要处理逻辑包括：
+
+. 检查请求 scope 是否包含 openid，不包含不处理
+. 使用 `WebClientReactiveAuthorizationCodeTokenResponseClient.getTokenResponse` 获取 `access_token`
+. 使用 `OidcAuthorizationCodeReactiveAuthenticationManager.createOidcToken` 创建 `OidcIdToken`
+. 使用 `ReactiveOAuth2UserService.loadUser` 获取 `OidcUser`
+. 使用 `GrantedAuthoritiesMapper.mapAuthorities` 映射 `Collection<GrantedAuthority>`
+. 使用上面得到的对象构建 `OAuth2LoginAuthenticationToken`
+
+== 案例结论
+
+最终在 `NimbusReactiveJwtDecoder.createJwt` 方法中找到异常原因：*expiresAt must be after issuedAt*。调试信息如下：
+
+.授权码认证流程异常
+image::security/授权码认证流程分析/授权码认证流程异常.png[]
+
+为什么 *IdToken* 签发时间等于过期时间呢？原因是在认证授权中心，配置了客户端 *access_token_validity* 为 0。
+
+WARNING: 找到异常原因后，瞬间失去了调试源码的动力。
+
