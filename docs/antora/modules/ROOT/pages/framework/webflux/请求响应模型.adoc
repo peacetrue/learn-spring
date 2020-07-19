@@ -2,7 +2,7 @@
 安宁 <xiayouxue@hotmail.com>
 v1.0, 2020-06-12: SNAPSHOT
 
-简单介绍 *org.springframework:spring-webflux* 中的请求响应接口。
+本文介绍 *spring-webflux* 中的请求响应接口。
 
 == 请求响应模型
 
