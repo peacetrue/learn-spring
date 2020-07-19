@@ -1,0 +1,49 @@
+= 运行机制
+
+本文简单介绍``spring-webflux``的运行机制。
+
+== 概述
+
+.运行机制
+image::webflux/运行机制.png[]
+
+主要包括三个部分：``WebHandler``、``WebFilter``和``DispatcherHandler``。核心逻辑是处理``ServerWebExchange``：
+
+[source%nowrap,java]
+----
+Mono<Void> handle(ServerWebExchange exchange);
+----
+
+== WebHandler
+
+``WebHandler``使用装饰模式，将``HttpWebHandlerAdapter``、``ExceptionHandlingWebHandler``、``FilteringWebHandler``、``DispatcherHandler``组合成单个``WebHandler``。
+
+== WebFilter
+
+``WebFilter``使用过滤器模式链式调用所有``WebFilter``。
+
+装饰模式和过滤器模式都可以形成链式调用，那么它们的区别是什么呢？*装饰模式的委派对象为成员变量，过滤器的委派对象是方法参数*：
+
+[source%nowrap,java]
+----
+class 装饰模式{
+    成员变量接口
+    invoke(){
+      //开始
+      调用 成员变量接口
+      //结束
+    }
+}
+
+class 过滤器模式{
+    invoke(方法参数接口){
+      //开始
+      调用 方法参数接口
+      //结束
+    }
+}
+----
+
+== DispatcherHandler
+
+``HandlerMapping``用于根据``ServerWebExchange``找到匹配的``Handler``；``HandlerAdapter``用于处理``Handler``并返回``HandlerResult``；``HandlerResultHandler``用于处理``HandlerResult``。`HandlerMapping`、`HandlerAdapter`、``HandlerResultHandler``它们都使用遍历模式执行处理。何为遍历模式呢？笔者称之为使用一组集合轮流处理，遇到成功返回则完成处理。无论是``HandlerMapping.getHandler``的返回非``null``值表示成功，还是``HandlerAdapter``、``HandlerResultHandler``的``supports``返回``true``表示成功，都是此模式。

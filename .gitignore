@@ -27,3 +27,6 @@ hs_err_pid*
 .idea
 .gradle
 build
+
+**/pages/翻译
+**/pages/源码

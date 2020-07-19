@@ -1,0 +1,164 @@
+= 配置同步原理
+
+本文介绍：环境仓库配置更新后，自动同步到配置客户端的原理。
+
+以下通过一个实际案例展开分析，案例为：修改 Github 远程仓库路由配置后，路由转发功能实时生效。该案例构建于 https://github.com/peacetrue/peacetrue-microservice-template[peacetrue-microservice-template^] 项目（*dev/1.1.0/config-sync* 分支）。
+
+== 版本说明
+
+* spring-cloud-config-server:2.2.2
+* spring-cloud-config-monitor:2.2.2
+* spring-cloud-config-client:2.2.2
+* spring-cloud-starter-bus-amqp:2.2.2
+
+== 依赖说明
+
+使用配置同步，服务端需要添加：
+
+* spring-cloud-config-server
+* spring-cloud-config-monitor
+* spring-cloud-starter-bus-amqp
+
+客户端需要添加：
+
+* spring-cloud-config-client
+* spring-cloud-starter-bus-amqp
+
+== 流程概述
+
+.原理概述
+image::cloud/config/配置同步原理/原理概述.png[]
+
+流程步骤说明：
+
+. 用户提交到 Github 远程仓库
+. Github 远程仓库触发配置的 push webhook（调用 HTTP(S) 请求）
+. 配置中心 `PropertyPathEndpoint` 接收配置变更通知
+. 配置中心触发 `RefreshRemoteApplicationEvent`
+. 消息通过 *RabbitMQ* 推送到配置客户端
+. 配置客户端监听到 `RefreshRemoteApplicationEvent` 刷新应用上下文
+
+== 启动服务
+
+. 启动配置中心：8888
+. 启动接口网关：443
+
+查看接口网关路由配置信息：https://localhost/actuator/configprops
+
+.路由配置信息
+image::cloud/config/配置同步原理/路由配置信息.png[]
+
+当前只有 `/message` 的路由。
+
+== 配置反向代理
+
+因为在本地测试，Github 无法推送到本地，需要配置反向代理，这里使用到 https://ngrok.com/[ngrok^] 。
+
+将 ngrok 映射到配置中心 8888 端口：
+
+.ngrok映射到配置中心
+image::cloud/config/配置同步原理/ngrok映射到配置中心.png[]
+
+发现外网的 https 只能映射到内网的 http。这里需要改为映射到接口网关 443 端口：
+
+.ngrok映射到接口网关
+image::cloud/config/配置同步原理/ngrok映射到接口网关.png[]
+
+这样外网的 https://cbd1194f0ddd.ngrok.io 就能访问到本地的 \https://localhost:443 。Github 要将消息推送到配置中心，但无法直接访问配置中心，只能访问到接口网关，所以需要由接口网关转发到配置中心：
+
+.peacetrue-microservice-gateway.yml
+[source%nowrap,yml]
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+        #配置中心监听
+        - id: config_center_monitor
+          #配置中心地址
+          uri: ${MICROSERVICE_PROTOCOL:http}://${MICROSERVICE_CONFIG_HOST:localhost}:${MICROSERVICE_CONFIG_PORT:8888}/
+          predicates:
+            - Path=/monitor/**
+----
+
+因为配置中心启用了安全认证，直接访问 `/monitor` 接口会被拒绝，怎么处理呢？有两个办法：
+
+. 取消 `/monitor` 接口的认证
+. 使用 `http basic` 认证
+
+.WebSecurityConfig
+[source%nowrap,java]
+----
+@EnableWebSecurity
+public static class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    public void configure(WebSecurity web) {
+        //第一种，直接忽略
+        web.ignoring().antMatchers("/monitor/**");
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+        //第二种，需要配置忽略 csrf
+        http.csrf(configurer -> configurer.ignoringAntMatchers("/monitor/**"));
+    }
+}
+----
+
+== 配置 Github Webhook
+
+Github Webhook 配置步骤如下：
+
+. 在项目页，点击顶部导航栏最右侧的 Settings
+. 在项目设置页，点击左侧菜单栏内的 Webhooks
+. 在 Webhook 页面，点击 Add webhook
+
+最终进入 webhook 管理页，页面内容如下：
+
+.配置GithubWebhook.png
+image::cloud/config/配置同步原理/配置GithubWebhook.png[]
+
+页面各项解释如下：
+
+. Payload URL：消息推送地址，填写配置中心监听地址 https://peacetrue:password@cbd1194f0ddd.ngrok.io/monitor footnote:[使用 http basic 认证，加入用户名和密码]
+. Content type：消息内容格式，配置中心只支持 `application/json`，选择 `application/json`
+. Secret：使用密钥签名消息内容，配置中心不支持，这里不填
+. SSL verification：SSL 验证，整套服务都使用了 HTTPS，选择 *Enable SSL verification*
+. Which events would you like to trigger this webhook?：何时触发此 webhook，提交更改后触发，选择 *Just the push event*
+. Active：勾选后会保留推送记录，钩上
+
+== 执行测试
+
+修改远程仓库配置信息：
+
+.peacetrue-microservice-gateway.yml
+[source%nowrap,yml]
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+        #添加测试路由，拦截以 baidu4 起始的路径，转发到百度
+        - id: test4
+          uri: https://www.baidu.com/
+          predicates:
+            - Path=/baidu4/**
+          filters:
+            - RewritePath=/baidu4,/
+----
+
+提交并推送到 Github 后，webhook 管理页会显示此次操作后触发的请求信息：
+
+.github推送信息
+image::cloud/config/配置同步原理/github推送信息.png[]
+
+试了很多次都不成功，主要是 ngrok 的代理会比较慢，总是请求超时：
+
+.webhook请求超时
+image::cloud/config/配置同步原理/webhook请求超时.png[]
+
+实际上已经推送成功了，访问 https://cbd1194f0ddd.ngrok.io/baidu4 ：
+
+.访问百度
+image::cloud/config/配置同步原理/访问百度.png[]

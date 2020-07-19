@@ -1,0 +1,58 @@
+== `spring.profiles.active` 和 `spring.profiles.include` 的区别
+
+本文介绍 `spring.profiles.active` 和 `spring.profiles.include` 的区别。笔者认为主要是语意上的区别，实际使用效果相同。假设，项目有 2 种环境：dev、prod，我们选择激活其中一种；其中涉及到 3 种组件：https、mysql、log，我们根据环境选择包含一个或多个。active 的构件被认为是与环境有关的，include 的构件被认为是与环境无关的。使用示例如下：
+
+[source%nowrap,yml]
+----
+#每种环境都使用 mysql
+spring.profiles.include: mysql
+db.schema: db
+
+---
+#开发环境
+spring.profiles: dev
+
+db:
+  hostname: localhost
+  username: dev
+  password: dev
+
+---
+#生产环境
+spring.profiles: prod
+
+spring.profiles.include: https,log
+
+db:
+  hostname: company.com
+  username: prod
+  password: prod
+
+---
+spring.profiles: mysql
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://${db.hostname}:3306/${db.schema}
+    username: ${db.username}
+    password: ${db.password}
+
+---
+#默认使用 http 协议，包含此项使用 https 协议
+spring.profiles: https
+
+server:
+  ssl:
+    key-store: file://${user.home}/peacetrue.cn.jks
+    key-alias: peacetrue.cn
+    key-store-password: password
+
+---
+#默认输出到控制台，包含此项输出到文件
+spring.profiles: log
+
+logging.file.name: logs/root.log
+
+----
+
+在实际启动项目时，执行 `java -jar app.jar --spring.profiles.active=dev` 或者 `java -jar app.jar --spring.profiles.include=dev` 是等效的，可以在控制台看到输出的日志都是：`The following profiles are active: dev`。

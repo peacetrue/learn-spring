@@ -1,6 +1,6 @@
 = NettyWebServer 启动运行机制
 
-本文主要介绍 Spring 框架中 `NettyWebServer` 的启动运行机制。
+本文介绍 `spring-webflux` 中 `NettyWebServer` 的启动运行机制。
 
 == 版本说明
 
@@ -84,7 +84,7 @@ private void createWebServer() {
 }
 ----
 
-可以看出：`WebServerManager` 是在 `ReactiveWebServerApplicationContext` 中创建的。关于 `ReactiveWebServerApplicationContext` 的创建过程可以参考 link:SpringApplication启动时如何选择ConfigurableApplicationContext.adoc[SpringApplication启动时如何选择ConfigurableApplicationContext^]。
+可以看出：`WebServerManager` 是在 `ReactiveWebServerApplicationContext` 中创建的。关于 `ReactiveWebServerApplicationContext` 的创建过程可以参考 xref:boot/ConfigurableApplicationContext的初始化.adoc[ConfigurableApplicationContext的初始化^]。
 
 .小结：
 . `ReactiveWebServerApplicationContext.createWebServer()`
