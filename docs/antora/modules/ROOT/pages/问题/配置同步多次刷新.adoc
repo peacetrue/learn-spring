@@ -1,0 +1,11 @@
+= 配置同步多次刷新
+
+本文介绍由 `PropertyPathEndpoint.guessServiceName` 导致的多次刷新问题。
+
+== 问题描述
+
+在远程仓库修改 `peacetrue-microservice-gateway.yml` 配置后，Github 会将修改的文件路径 `peacetrue-microservice-gateway` 推送到 `PropertyPathEndpoint`，`PropertyPathEndpoint.guessServiceName` 根据路径 `peacetrue-microservice-gateway` 推测出 `busId`：
+
+. peacetrue:microservice-gateway
+. peacetrue-microservice:gateway
+. peacetrue-microservice-gateway

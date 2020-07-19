@@ -1,4 +1,4 @@
-= SpringApplication 启动时如何实例化 ConfigurableApplicationContext
+= SpringApplication.run上下文初始化
 
 本文介绍在调用 `SpringApplication.run(...)` 时，如何实例化 `ConfigurableApplicationContext`，也即是如何选择 `ConfigurableApplicationContext` 的子类。
 
