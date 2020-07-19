@@ -5,7 +5,7 @@
 == 概述
 
 .运行机制
-image::webflux/运行机制.png[]
+image::framework/webflux/运行机制.png[]
 
 主要包括三个部分：``WebHandler``、``WebFilter``和``DispatcherHandler``。核心逻辑是处理``ServerWebExchange``：
 

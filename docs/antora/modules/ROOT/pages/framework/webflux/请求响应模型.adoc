@@ -7,7 +7,7 @@ v1.0, 2020-06-12: SNAPSHOT
 == 请求响应模型
 
 .请求响应模型
-image::webflux/请求响应模型.png[]
+image::framework/webflux/请求响应模型.png[]
 
 == 客户端视角
 
@@ -18,7 +18,7 @@ image::webflux/请求响应模型.png[]
 ==== ExchangeFunction 交换函数
 
 .交换函数类图
-image::webflux/交换函数类图.png[]
+image::framework/webflux/交换函数类图.png[]
 
 .用法示例
 [source%nowrap,java]
@@ -37,7 +37,7 @@ Mono<String> result = exchangeFunction
 ==== WebClient Web 客户端
 
 .web客户端类图
-image::webflux/web客户端类图.png[]
+image::framework/webflux/web客户端类图.png[]
 
 .用法示例
 [source%nowrap,java]
@@ -55,7 +55,7 @@ Mono<String> result = WebClient.builder()
 === 客户端过滤器 ExchangeFilterFunction
 
 .客户端拦截器原理
-image::webflux/客户端拦截器原理.png[]
+image::framework/webflux/客户端拦截器原理.png[]
 
 * 在实际发出请求之后处理请求
 * 在实际获得响应之前处理响应
@@ -91,37 +91,37 @@ Mono<String> result = WebClient.builder()
 包含客户端请求的具体信息。
 
 .客户端请求类图
-image::webflux/客户端请求类图.png[]
+image::framework/webflux/客户端请求类图.png[]
 
 === 客户端响应 ClientResponse
 
 包含客户端响应的具体信息。
 
 .客户端响应类图
-image::webflux/客户端响应类图.png[]
+image::framework/webflux/客户端响应类图.png[]
 
 == 服务端视角
 
 服务端处理流程如下：
 
 .服务端处理流程
-image::webflux/服务端处理流程.png[]
+image::framework/webflux/服务端处理流程.png[]
 
 === 服务端路由函数 RouterFunction
 
 .服务端路由函数类图
-image::webflux/服务端路由函数类图.png[]
+image::framework/webflux/服务端路由函数类图.png[]
 
 === 服务端处理函数 HandlerFunction
 
 由程序员最终实现的末端函数。
 
 .服务端处理函数类图
-image::webflux/服务端处理函数类图.png[]
+image::framework/webflux/服务端处理函数类图.png[]
 
 === 服务端过滤器 HandlerFilterFunction
 
-image::webflux/服务端过滤器类图.png[]
+image::framework/webflux/服务端过滤器类图.png[]
 
 * 在实际接收请求之前处理请求
 * 在实际输出响应之后处理响应
@@ -131,11 +131,11 @@ image::webflux/服务端过滤器类图.png[]
 包含请求的具体信息。
 
 .服务端请求
-image::webflux/服务端请求.png[]
+image::framework/webflux/服务端请求.png[]
 
 === 服务端响应 ServerResponse
 
 包含响应的具体信息。
 
 .服务端响应
-image::webflux/服务端响应.png[]
+image::framework/webflux/服务端响应.png[]
