@@ -12,8 +12,8 @@
 *** xref:cloud/config/配置同步原理.adoc[配置同步原理]
 ** Gateway
 //*** xref:cloud/gateway/使用总结.adoc[spring 网关]
-*** xref:cloud/gateway/取代nginx.adoc[取代 NGINX]
 *** xref:cloud/gateway/运行机制.adoc[运行机制]
+*** xref:cloud/gateway/取代nginx.adoc[取代 NGINX]
 
 //* xref:event.adoc[spring 事件模型]
 //** xref:event/OriginalEventModel.adoc[原始事件模型]

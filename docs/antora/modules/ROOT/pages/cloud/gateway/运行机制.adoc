@@ -2,7 +2,7 @@
 
 本文简单介绍 `spring-cloud-gateway` 的运行机制。
 
-本文接 xref:framework/webflux/运行机制.adoc[Webflux运行机制]。
+本文接 xref:framework/webflux/WebHandler运行机制.adoc[WebHandler运行机制]。
 
 == 概述
 
