@@ -1,0 +1,26 @@
+= 运行机制
+
+本文简单介绍 `spring-cloud-gateway` 的运行机制。
+
+本文接 xref:framework/webflux/运行机制.adoc[Webflux运行机制]。
+
+== 概述
+
+运行在 `DispatcherHandler` 上的 `Gateway` 处理逻辑。
+
+.运行机制
+image::cloud/gateway/运行机制.png[]
+
+主要包括三个部分：``RoutePredicateHandlerMapping``、``SimpleHandlerAdapter``和``Gateway.FilteringWebHandler``。
+
+== RoutePredicateHandlerMapping
+
+`RoutePredicateHandlerMapping` 实际委派给 `Route.predicate` 执行判断，并始终返回 `Gateway.FilteringWebHandler` footnote:[与 `Webflux.FilteringWebHandler` 重名，加前缀以示区别]，然后将匹配的 `Route` 存储在 `ServerWebExchange` 中 。
+
+== SimpleHandlerAdapter
+
+支持处理类型为 `WebHandler` 的 `Handler`。
+
+== Gateway.FilteringWebHandler
+
+`Gateway.FilteringWebHandler` 的功能与 `Webflux.FilteringWebHandler` 类似，相对应的还有 `GatewayFilter` 和 `GatewayFilterChain`。`Gateway.FilteringWebHandler` 会根据 `RoutePredicateHandlerMapping` 存储在 `ServerWebExchange` 中的 `Route.gatewayFilters` 构造 `GatewayFilterChain`，并使用 `GatewayFilterChain` 完成后续处理。

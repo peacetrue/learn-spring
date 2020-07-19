@@ -17,7 +17,7 @@
 
 下面是一则案例，描述在授权码认证流程中出现的异常，日志级别基于 TRACE：
 
-访问内部应用 https://peacetrue.cn:8530 后，系统发现未登录，重定向到认证授权中心：
+访问内部客户端 https://peacetrue.cn:8530 后，系统发现未登录，重定向到认证授权中心：
 
 image::security/认证授权中心登陆页.png[]
 
@@ -38,7 +38,7 @@ image::security/认证授权中心登陆页.png[]
 2020-07-14 10:47:14.717 TRACE 13486 --- [ctor-http-nio-2] o.s.h.s.r.ReactorHttpHandlerAdapter      : [2cabe2be-2] Handling completed
 ----
 
-在认证授权中心登陆并许可后，重定向回内部应用，页面提示 `Invalid credentials`：
+在认证授权中心登陆并许可后，重定向回内部客户端，页面提示 `Invalid credentials`：
 
 image::security/授权码登陆失败.png[]
 
