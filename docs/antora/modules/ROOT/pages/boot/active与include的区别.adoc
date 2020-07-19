@@ -1,4 +1,4 @@
-== `spring.profiles.active` 和 `spring.profiles.include` 的区别
+= `spring.profiles.active` 和 `spring.profiles.include` 的区别
 
 本文介绍 `spring.profiles.active` 和 `spring.profiles.include` 的区别。笔者认为主要是语意上的区别，实际使用效果相同。假设，项目有 2 种环境：dev、prod，我们选择激活其中一种；其中涉及到 3 种组件：https、mysql、log，我们根据环境选择包含一个或多个。active 的构件被认为是与环境有关的，include 的构件被认为是与环境无关的。使用示例如下：
 
