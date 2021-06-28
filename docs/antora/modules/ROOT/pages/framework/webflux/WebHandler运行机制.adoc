@@ -9,7 +9,7 @@ image::framework/webflux/运行机制.png[]
 
 主要包括三个部分：``WebHandler``、``WebFilter``和``DispatcherHandler``。核心逻辑是处理``ServerWebExchange``：
 
-[source%nowrap,java]
+[source,java]
 ----
 Mono<Void> handle(ServerWebExchange exchange);
 ----
@@ -24,7 +24,7 @@ Mono<Void> handle(ServerWebExchange exchange);
 
 装饰模式和过滤器模式都可以形成链式调用，那么它们的区别是什么呢？*装饰模式的委派对象为成员变量，过滤器的委派对象是方法参数*：
 
-[source%nowrap,java]
+[source,java]
 ----
 class 装饰模式{
     成员变量接口

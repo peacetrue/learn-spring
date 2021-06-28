@@ -1,6 +1,6 @@
 = spring 事件交互式负载改进
 
-[source%nowrap,java]
+[source,java]
 ----
 include::example$event/SpringEventListenerInteractivePayloadImprove.java[]
 ----

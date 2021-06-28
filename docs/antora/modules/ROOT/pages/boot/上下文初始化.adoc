@@ -13,7 +13,7 @@
 通常会像下面这样启动 Spring Boot 应用：
 
 .ClientInnerApplication
-[source%nowrap,java]
+[source,java]
 ----
 @SpringBootApplication
 public class ClientInnerApplication {
@@ -26,7 +26,7 @@ public class ClientInnerApplication {
 `SpringApplication.run` 会返回一个 `ConfigurableApplicationContext`，那么 `ConfigurableApplicationContext` 的实例类型是如何确定呢？通过以下源码：
 
 .SpringApplication.createApplicationContext()
-[source%nowrap,java]
+[source,java]
 ----
 protected ConfigurableApplicationContext createApplicationContext() {
     Class<?> contextClass = this.applicationContextClass;
@@ -55,7 +55,7 @@ protected ConfigurableApplicationContext createApplicationContext() {
 可以看出：是通过 `webApplicationType` 判断的。不同的 `webApplicationType` 选择不同的 `ConfigurableApplicationContext` 子类。那么 `webApplicationType` 的值是怎么确定的呢？通过以下源码：
 
 .SpringApplication
-[source%nowrap,java]
+[source,java]
 ----
 public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
     this.resourceLoader = resourceLoader;
@@ -71,7 +71,7 @@ public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySourc
 可以看出：`webApplicationType` 是在 `SpringApplication` 实例化时，获取了 `WebApplicationType.deduceFromClasspath()` 的返回值。那么 `WebApplicationType.deduceFromClasspath()` 是如何选择 `WebApplicationType` 的呢？通过以下源码：
 
 .WebApplicationType.deduceFromClasspath()
-[source%nowrap,java]
+[source,java]
 ----
 static WebApplicationType deduceFromClasspath() {
     if (ClassUtils.isPresent(WEBFLUX_INDICATOR_CLASS, null) && !ClassUtils.isPresent(WEBMVC_INDICATOR_CLASS, null)

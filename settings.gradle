@@ -4,4 +4,4 @@ rootProject.name = 'learn-spring'
 //include('resttemplate')
 //include('beanfactory')
 //include('gateway')
-//include('config')
+include('config')

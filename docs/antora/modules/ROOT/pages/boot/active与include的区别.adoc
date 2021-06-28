@@ -2,7 +2,7 @@
 
 本文介绍 `spring.profiles.active` 和 `spring.profiles.include` 的区别。笔者认为主要是语意上的区别，实际使用效果相同。假设，项目有 2 种环境：dev、prod，我们选择激活其中一种；其中涉及到 3 种组件：https、mysql、log，我们根据环境选择包含一个或多个。active 的构件被认为是与环境有关的，include 的构件被认为是与环境无关的。使用示例如下：
 
-[source%nowrap,yml]
+[source,yml]
 ----
 #每种环境都使用 mysql
 spring.profiles.include: mysql
@@ -56,3 +56,9 @@ logging.file.name: logs/root.log
 ----
 
 在实际启动项目时，执行 `java -jar app.jar --spring.profiles.active=dev` 或者 `java -jar app.jar --spring.profiles.include=dev` 是等效的，可以在控制台看到输出的日志都是：`The following profiles are active: dev`。
+
+== 总结
+
+. 无环境状态有两次机会：命令行和 application.yml 的泛化区域
+. 无环境状态下，active、include 等效，均视为激活环境
+. 有环境状态下，active 无效，include 对激活环境有效

@@ -12,7 +12,7 @@ Map 和 List 具有一定的相似性：
 
 通常情况下，Map 的 Key 可以当作 List 的索引，Map 的 Value 可以当作List 的元素，这样二者可以实现互转：
 
-[source%nowrap,yml]
+[source,yml]
 ----
 # 基于 List 的配置
 peacetrue:
@@ -38,7 +38,7 @@ peacetrue:
 当 List 的元素只有 2 个属性时，Map 的 Key 和 Value 可以用于表示该元素的两个属性：
 
 .元素中含有两个属性：pattern 和 location
-[source%nowrap,yml]
+[source,yml]
 ----
 # 基于 List 的配置
 peacetrue:
@@ -59,7 +59,7 @@ peacetrue:
 
 List 作为配置时，重复配置是覆盖效果；Map 作为配置时，重复配置是追加效果：
 
-[source%nowrap,yml]
+[source,yml]
 ----
 spring.profiles: list
 
@@ -119,7 +119,7 @@ peacetrue:
 路径表达式作为 key 需要转译，将 `路径` 改为 *'[`路径`]'*。
 
 .原始写法
-[source%nowrap,yml]
+[source,yml]
 ----
 peacetrue:
   learn:
@@ -129,7 +129,7 @@ peacetrue:
 ----
 
 .转译后写法
-[source%nowrap,yml]
+[source,yml]
 ----
 peacetrue:
   learn:

@@ -21,7 +21,7 @@ image::framework/webflux/请求响应模型.png[]
 image::framework/webflux/交换函数类图.png[]
 
 .用法示例
-[source%nowrap,java]
+[source,java]
 ----
 //构造交换函数
 ExchangeFunction exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
@@ -40,7 +40,7 @@ Mono<String> result = exchangeFunction
 image::framework/webflux/web客户端类图.png[]
 
 .用法示例
-[source%nowrap,java]
+[source,java]
 ----
 Mono<String> result = WebClient.builder()
         .baseUrl("https://example.com/resource")
@@ -61,7 +61,7 @@ image::framework/webflux/客户端拦截器原理.png[]
 * 在实际获得响应之前处理响应
 
 .用法示例（基于 ExchangeFunction ）
-[source%nowrap,java]
+[source,java]
 ----
 ExchangeFunction exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
 ClientRequest<Void> request = ClientRequest.method(HttpMethod.GET, "https://example.com/resource").build();
@@ -74,7 +74,7 @@ Mono<String> result = exchangeFunction
 ----
 
 .用法示例（基于 WebClient ）
-[source%nowrap,java]
+[source,java]
 ----
 Mono<String> result = WebClient.builder()
         .baseUrl("https://example.com/resource")

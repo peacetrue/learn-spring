@@ -23,7 +23,7 @@ image::security/认证授权中心登陆页.png[]
 
 后台日志信息如下：
 
-[source%nowrap,log]
+[source,log]
 ----
 2020-07-14 10:47:09.806 TRACE 13486 --- [freshExecutor-0] o.s.c.netflix.eureka.CloudEurekaClient   : onCacheRefreshed called with count: 3
 2020-07-14 10:47:14.592 TRACE 13486 --- [ctor-http-nio-2] o.s.w.s.adapter.HttpWebHandlerAdapter    : [2cabe2be-1] HTTP GET "/", headers={masked}
@@ -44,7 +44,7 @@ image::security/授权码登陆失败.png[]
 
 后台日志信息如下：
 
-[source%nowrap,log]
+[source,log]
 ----
 2020-07-14 10:53:38.809 TRACE 13486 --- [ctor-http-nio-3] o.s.w.s.adapter.HttpWebHandlerAdapter    : [8cb9eef6-3] HTTP GET "/login/oauth2/code/peacetrue?code=8e5IEdJsv7&state=kCyPbWgbbzYpskX0jmiDz0zp7L2W-Pe-oLueSW1nrmA%3D", headers={masked}
 2020-07-14 10:53:38.914 TRACE 13486 --- [ctor-http-nio-3] o.s.w.r.f.client.ExchangeFunctions       : [670aa87e] HTTP POST https://peacetrue.cn:8443/uaa/oauth/token, headers={masked}
@@ -70,7 +70,7 @@ image::security/授权码登陆失败.png[]
 在启动应用前，需要配置应用的安全策略。以下是配置基于 OAuth2 授权码认证的示例：
 
 .WebFluxSecurityConfig
-[source%nowrap,java]
+[source,java]
 ----
 @EnableWebFluxSecurity
 public class WebFluxSecurityConfig {
@@ -96,7 +96,7 @@ public class WebFluxSecurityConfig {
 通过以下源码：
 
 .ServerHttpSecurityConfiguration
-[source%nowrap,java]
+[source,java]
 ----
 @Bean(HTTPSECURITY_BEAN_NAME)
 @Scope("prototype")
@@ -112,7 +112,7 @@ public ServerHttpSecurity httpSecurity() {
 可以看出：在 `ServerHttpSecurityConfiguration` 中声明了 `ServerHttpSecurity`。`httpSecurity()` 方法基于属性级别，也就是说可以在多个配置文件中，通过 `ServerHttpSecurity` 构建出多个 `SecurityWebFilterChain`。示例如下：
 
 .WebFluxSecurityConfig
-[source%nowrap,java]
+[source,java]
 ----
 public class WebFluxSecurityConfig {
 
@@ -149,7 +149,7 @@ public class WebFluxSecurityConfig {
 在介绍 `SecurityWebFilterChain` 的用途之前，先要了解 `SecurityWebFilterChain` 是如何载入容器的。通过以下源码：
 
 .WebFluxSecurityConfiguration
-[source%nowrap,java]
+[source,java]
 ----
 @Autowired(required = false)
 void setSecurityWebFilterChains(List<SecurityWebFilterChain> securityWebFilterChains) {
@@ -160,7 +160,7 @@ void setSecurityWebFilterChains(List<SecurityWebFilterChain> securityWebFilterCh
 可以看出：`securityWebFilterChains` 被自动注入到 `WebFluxSecurityConfiguration` 中。那么 `WebFluxSecurityConfiguration.securityWebFilterChains` 有什么用呢？通过以下源码：
 
 .WebFluxSecurityConfiguration
-[source%nowrap,java]
+[source,java]
 ----
 @Bean(SPRING_SECURITY_WEBFILTERCHAINFILTER_BEAN_NAME)
 @Order(value = WEB_FILTER_CHAIN_FILTER_ORDER)
@@ -176,7 +176,7 @@ public WebFilterChainProxy springSecurityWebFilterChainFilter() {
 安全处理主要是通过 `WebFilter` 实现的。`WebFilter` 经过 `WebFilterChainProxy` 和 `SecurityWebFilterChain` 的封装后可以用于处理安全请求。那么在安全处理过程中主要涉及哪些 `WebFilter` 呢？通过以下源码：
 
 .ServerHttpSecurity
-[source%nowrap,java]
+[source,java]
 ----
 public SecurityWebFilterChain build() {
     //内容太多，删掉简化

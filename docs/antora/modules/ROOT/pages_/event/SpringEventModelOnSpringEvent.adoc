@@ -1,6 +1,6 @@
 = spring 内置事件对象
 
-[source%nowrap,java]
+[source,java]
 ----
 include::example$event/SpringEventModelOnSpringEvent.java[]
 ----

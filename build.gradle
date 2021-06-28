@@ -1,11 +1,12 @@
 buildscript {
     repositories {
-        maven { url 'https://repo.spring.io/plugins-release' }
+        mavenLocal()
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
     }
 
     dependencies {
-        classpath "io.spring.gradle:dependency-management-plugin:1+"
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:2+"
+        classpath "io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE"
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.4.5")
     }
 }
 
@@ -13,16 +14,15 @@ allprojects { project ->
 
     repositories {
         mavenLocal()
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        maven { url "https://repo.spring.io/plugins-release" }
-        mavenCentral()
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     }
 
     apply plugin: 'org.springframework.boot'
     apply plugin: "io.spring.dependency-management"
     dependencyManagement {
         imports {
-            mavenBom "com.github.peacetrue:peacetrue-dependencies:2+"
+            mavenBom "com.github.peacetrue:peacetrue-dependencies:2.0.0-SNAPSHOT"
         }
     }
     // find -type f | grep .svn$
@@ -31,8 +31,8 @@ allprojects { project ->
     description '学习 spring-framework'
 
     apply plugin: "java-library"
-    sourceCompatibility = 9
-    targetCompatibility = 9
+    sourceCompatibility = 8
+    targetCompatibility = 8
 
     dependencies {
         compileOnly "org.projectlombok:lombok"

@@ -14,7 +14,7 @@
 在运行 Spring Boot Reactive 应用时，需要在应用内启动一个 `WebServer`，那么 `WebServer` 的启动过程是怎样的呢？通过以下源码：
 
 .WebServerManager
-[source%nowrap,java]
+[source,java]
 ----
 WebServerManager(ReactiveWebServerApplicationContext applicationContext, ReactiveWebServerFactory factory,
         Supplier<HttpHandler> handlerSupplier, boolean lazyInit) {
@@ -30,7 +30,7 @@ WebServerManager(ReactiveWebServerApplicationContext applicationContext, Reactiv
 那么 `ReactiveWebServerFactory` 是怎么创建的呢？通过以下源码：
 
 .ReactiveWebServerFactoryConfiguration.EmbeddedNetty
-[source%nowrap,java]
+[source,java]
 ----
 @Bean
 NettyReactiveWebServerFactory nettyReactiveWebServerFactory(ReactorResourceFactory resourceFactory,
@@ -46,7 +46,7 @@ NettyReactiveWebServerFactory nettyReactiveWebServerFactory(ReactorResourceFacto
 可以看出：在 `ReactiveWebServerFactoryConfiguration.EmbeddedNetty` 中声明了 `NettyReactiveWebServerFactory`。那么 `ReactiveWebServerFactoryConfiguration.EmbeddedNetty` 是如何启用的呢？通过以下源码：
 
 .ReactiveWebServerFactoryAutoConfiguration
-[source%nowrap,java]
+[source,java]
 ----
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @Configuration(proxyBeanMethods = false)
@@ -66,7 +66,7 @@ public class ReactiveWebServerFactoryAutoConfiguration {...}
 那么 `WebServerManager` 是怎么创建的呢？通过以下源码：
 
 .ReactiveWebServerApplicationContext.createWebServer()
-[source%nowrap,java]
+[source,java]
 ----
 private void createWebServer() {
     WebServerManager serverManager = this.serverManager;
@@ -96,7 +96,7 @@ private void createWebServer() {
 已经创建好了 `WebServer`，那么何时启动呢？通过以下源码：
 
 .WebServerStartStopLifecycle.start()
-[source%nowrap,java]
+[source,java]
 ----
 public void start() {
     this.weServerManager.start();
@@ -107,7 +107,7 @@ public void start() {
 可以看出：在 `WebServerStartStopLifecycle.start()` 中调用了 `WebServerManager.start()`，而 `WebServerManager.start()` 又调用了 `WebServer.start()`。那么 `WebServerStartStopLifecycle.start()` 是何时被调用的呢？在 `ReactiveWebServerApplicationContext.createWebServer` 中，已经将 `WebServerStartStopLifecycle` 注册到了应用上下文，`WebServerStartStopLifecycle` 实现了 `Lifecycle` 接口。通过以下源码：
 
 .DefaultLifecycleProcessor.startBeans(boolean)
-[source%nowrap,java]
+[source,java]
 ----
 private void startBeans(boolean autoStartupOnly) {
     Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
@@ -141,7 +141,7 @@ private void startBeans(boolean autoStartupOnly) {
 . AbstractApplicationContext.finishRefresh
 . DefaultLifecycleProcessor.onRefresh
 
-[source%nowrap,java]
+[source,java]
 ----
 public void onRefresh() {
     startBeans(true);
@@ -158,7 +158,7 @@ public void onRefresh() {
 现在服务已经启动了，那么服务启动之后，如何运行我们的代码呢？通过以下源码：
 
 .NettyReactiveWebServerFactory.getWebServer
-[source%nowrap,java]
+[source,java]
 ----
 public WebServer getWebServer(HttpHandler httpHandler) {
     HttpServer httpServer = createHttpServer();
@@ -172,7 +172,7 @@ public WebServer getWebServer(HttpHandler httpHandler) {
 可以看出：构造 `NettyWebServer` 需要传入 `HttpHandler`，而这个 `HttpHandler` 就是 `NettyWebServer` 处理请求的主要入口。那么 `HttpHandler` 是怎么被创建的呢？通过以下源码：
 
 .HttpHandlerAutoConfiguration.AnnotationConfig
-[source%nowrap,java]
+[source,java]
 ----
 @Bean
 public HttpHandler httpHandler(ObjectProvider<WebFluxProperties> propsProvider) {
@@ -189,7 +189,7 @@ public HttpHandler httpHandler(ObjectProvider<WebFluxProperties> propsProvider) 
 可以看出：`HttpHandler` 是由 `WebHttpHandlerBuilder.applicationContext(ApplicationContext).build()` 构建的。通过以下源码：
 
 .WebHttpHandlerBuilder.applicationContext
-[source%nowrap,java]
+[source,java]
 ----
 public static WebHttpHandlerBuilder applicationContext(ApplicationContext context) {
     WebHttpHandlerBuilder builder = new WebHttpHandlerBuilder(
@@ -217,7 +217,7 @@ public static WebHttpHandlerBuilder applicationContext(ApplicationContext contex
 并使用这些 Bean 构建 `HttpHandler`：
 
 .WebHttpHandlerBuilder.build
-[source%nowrap,java]
+[source,java]
 ----
 public HttpHandler build() {
 
@@ -248,7 +248,7 @@ public HttpHandler build() {
 
 最终构建出 `HttpHandler` 类似以下示例：
 
-[source%nowrap,java]
+[source,java]
 ----
 HttpHandler httpHandler = new HttpWebHandlerAdapter(
     new ExceptionHandlingWebHandler(

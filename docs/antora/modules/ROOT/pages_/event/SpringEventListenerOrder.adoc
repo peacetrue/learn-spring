@@ -1,6 +1,6 @@
 = spring 事件监听器执行顺序
 
-[source%nowrap,java]
+[source,java]
 ----
 include::example$event/SpringEventListenerOrder.java[]
 ----

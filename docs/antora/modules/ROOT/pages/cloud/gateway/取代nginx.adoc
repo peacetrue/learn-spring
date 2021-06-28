@@ -14,7 +14,7 @@
 
 spring gateway 提供了非常方便的配置，可以实现动态资源的转发和重定向，以下简单地配置转发：
 
-[source%nowrap,yml]
+[source,yml]
 ----
 spring:
   cloud:
@@ -45,7 +45,7 @@ spring:
 
 代理动态资源很容易，但对于静态资源目前只能在代码中声明：
 
-[source%nowrap,java]
+[source,java]
 ----
 @Bean
 public RouterFunction<ServerResponse> staticResourceLocator() {
@@ -62,7 +62,7 @@ public RouterFunction<ServerResponse> staticResourceLocator() {
 只能在代码中声明比较繁琐，简单地实现从配置读取：
 
 .StaticResourceProperties
-[source%nowrap,java]
+[source,java]
 ----
 @Data
 @ConfigurationProperties("peacetrue")
@@ -74,7 +74,7 @@ public class StaticResourceProperties {
 ----
 
 .StaticResourceAutoConfiguration
-[source%nowrap,java]
+[source,java]
 ----
 @Slf4j
 @Configuration
@@ -113,7 +113,7 @@ public class StaticResourceAutoConfiguration {
 //TODO 此问题待优化
 
 .配置示例
-[source%nowrap,yml]
+[source,yml]
 ----
 peacetrue:
   static-resources:
@@ -132,7 +132,7 @@ peacetrue:
 之前使用 nginx 配置如下：
 
 .nginx 配置
-[source%nowrap,conf]
+[source,conf]
 ----
 server {
     listen       443 ssl http2 default_server;
@@ -178,7 +178,7 @@ server {
 现改为使用 spring gateway 配置如下：
 
 .spring gateway 初始配置
-[source%nowrap,yml]
+[source,yml]
 ----
 #https 配置
 server:
@@ -213,7 +213,7 @@ peacetrue:
 路由会从上到下顺序匹配，所以代理所有请求的 biog_front 必须放在末尾，而且还要保证它的优先级低于静态代理，不然静态代理不会被执行。测试后发现，动态代理的优先级始终高于静态代理，那么就不能使用代理所有请求。调整配置如下：
 
 .spring gateway 子路径配置
-[source%nowrap,yml]
+[source,yml]
 ----
 #配置动态代理
 spring:
@@ -243,7 +243,7 @@ image::gateway/转发至game.png[]
 静态资源仍然直接访问主域，应该是使用了绝对地址而非相对地址。这样只能找出前端所有的具体请求，然后分别配置代理：
 
 .spring gateway 静态资源配置
-[source%nowrap,yml]
+[source,yml]
 ----
 spring:
   cloud:
@@ -258,7 +258,7 @@ spring:
 测试后发现一切正常，最终配置如下：
 
 .spring gateway 配置
-[source%nowrap,yml]
+[source,yml]
 ----
 spring:
   cloud:

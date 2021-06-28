@@ -1,6 +1,6 @@
 = spring 事件异常处理
 
-[source%nowrap,java]
+[source,java]
 ----
 include::example$event/SpringEventListenerExceptionHandle.java[]
 ----

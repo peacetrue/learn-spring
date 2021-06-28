@@ -67,7 +67,7 @@ image::cloud/config/配置同步原理/ngrok映射到接口网关.png[]
 这样外网的 https://cbd1194f0ddd.ngrok.io 就能访问到本地的 \https://localhost:443 。Github 要将消息推送到配置中心，但无法直接访问配置中心，只能访问到接口网关，所以需要由接口网关转发到配置中心：
 
 .peacetrue-microservice-gateway.yml
-[source%nowrap,yml]
+[source,yml]
 ----
 spring:
   cloud:
@@ -87,7 +87,7 @@ spring:
 . 使用 `http basic` 认证
 
 .WebSecurityConfig
-[source%nowrap,java]
+[source,java]
 ----
 @EnableWebSecurity
 public static class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -133,7 +133,7 @@ image::cloud/config/配置同步原理/配置GithubWebhook.png[]
 修改远程仓库配置信息：
 
 .peacetrue-microservice-gateway.yml
-[source%nowrap,yml]
+[source,yml]
 ----
 spring:
   cloud:

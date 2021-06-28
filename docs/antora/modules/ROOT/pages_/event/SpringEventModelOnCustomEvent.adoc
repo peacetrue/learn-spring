@@ -1,6 +1,6 @@
 = spring 事件模型
 
-[source%nowrap,java]
+[source,java]
 ----
 include::example$event/SpringEventModelOnCustomEvent.java[]
 ----
